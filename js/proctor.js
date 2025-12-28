@@ -136,6 +136,7 @@ document.addEventListener('DOMContentLoaded', async function () {
     }
 
     // Load dorms for dropdown
+    // Load dorms for dropdown
     async function loadDorms() {
         try {
             const data = await apiRequest('/dorms/');
@@ -179,24 +180,43 @@ document.addEventListener('DOMContentLoaded', async function () {
     }
 
     // Update room dropdown based on selected dorm
-    function updateRoomDropdown(dormId = null) {
+    // Update room dropdown based on selected dorm
+    async function updateRoomDropdown(dormId = null) {
         const roomSelect = document.getElementById('assignRoomNumber');
         if (!roomSelect) return;
 
-        roomSelect.innerHTML = '<option value="">Select room</option>';
+        roomSelect.innerHTML = '<option value="">Loading rooms...</option>';
+        roomSelect.disabled = true;
 
-        // Filter rooms by dorm if dormId provided
-        const filteredRooms = dormId
-            ? availableRooms.filter(room => room.dorm == dormId || room.dorm_name === dormId)
-            : availableRooms;
+        if (!dormId) {
+            roomSelect.innerHTML = '<option value="">Select dormitory first</option>';
+            return;
+        }
 
-        filteredRooms.forEach(room => {
-            const option = document.createElement('option');
-            option.value = room.id;
-            option.textContent = `Room ${room.room_number} - Floor ${room.floor || 1} (${room.current_occupancy || 0}/${room.capacity || 4})`;
-            option.dataset.roomId = room.id;
-            roomSelect.appendChild(option);
-        });
+        try {
+             // Fetch rooms for the specific dorm from API
+            const data = await apiRequest(`/dorms/${dormId}/rooms/`);
+            const roomList = data.rooms || data || [];
+
+            roomSelect.innerHTML = '<option value="">Select room</option>';
+            
+            if (Array.isArray(roomList)) {
+                roomList.forEach(room => {
+                    const option = document.createElement('option');
+                    option.value = room.id;
+                    option.textContent = `Room ${room.room_number} - Floor ${room.floor || 1} (${room.current_occupancy || 0}/${room.capacity || 4})`;
+                    option.dataset.roomId = room.id;
+                    roomSelect.appendChild(option);
+                });
+                roomSelect.disabled = false;
+            } else {
+                 roomSelect.innerHTML = '<option value="">No rooms found</option>';
+            }
+
+        } catch (error) {
+            console.log('Failed to load rooms for dorm:', error);
+            roomSelect.innerHTML = '<option value="">Error loading rooms</option>';
+        }
     }
 
     // Listen for dorm selection change
@@ -556,20 +576,17 @@ document.addEventListener('DOMContentLoaded', async function () {
             const assignmentDate = document.getElementById('assignmentDate')?.value || getTodayDate();
             const expectedCheckOut = document.getElementById('expectedCheckOut')?.value || null;
 
-            if (!studentId || !roomId) {
-                showAlert('Please select both student and room.', 'warning');
+            if (!studentId || !roomId || !assignmentDate || !expectedCheckOut) {
+                showAlert('Please fill in all required fields.', 'warning');
                 return;
             }
 
             const requestData = {
                 student_id: parseInt(studentId, 10),
                 room_id: parseInt(roomId, 10),
-                assignment_date: assignmentDate
+                assignment_date: assignmentDate,
+                expected_check_out: expectedCheckOut
             };
-
-            if (expectedCheckOut) {
-                requestData.expected_check_out = expectedCheckOut;
-            }
 
             try {
                 await apiRequest('/proctors/assign-room/', {
@@ -580,8 +597,16 @@ document.addEventListener('DOMContentLoaded', async function () {
                 showAlert('Room assigned successfully!', 'success');
                 assignForm.reset();
                 initializeDatePickers();
+                
+                // Clear room dropdown
+                const roomSelect = document.getElementById('assignRoomNumber');
+                if(roomSelect) {
+                    roomSelect.innerHTML = '<option value="">Select dormitory first</option>';
+                    roomSelect.disabled = true;
+                }
+
                 await loadStudents();
-                await loadAvailableRooms();
+                // We don't need to reload available rooms generally as we now fetch per dorm
 
             } catch (error) {
                 console.error('Assign room error:', error);
