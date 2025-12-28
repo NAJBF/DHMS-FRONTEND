@@ -41,121 +41,68 @@ document.addEventListener('DOMContentLoaded', async function () {
     }
 
     // Load maintenance jobs (pool and assigned)
+    // Load maintenance jobs (pool and assigned)
     async function loadMaintenanceJobs() {
-        const container = document.getElementById('maintenanceJobsTable');
-        if (!container) return;
+        const availableContainer = document.getElementById('availableJobsTable');
+        const myJobsContainer = document.getElementById('myJobsTable');
+
+        if (!availableContainer && !myJobsContainer) return;
 
         try {
-            // Get available jobs and my jobs
-            const availableData = await apiRequest('/staff/maintenance/');
-            const myJobsData = await apiRequest('/staff/maintenance/my-jobs/');
+            // Get available jobs
+            if (availableContainer) {
+                const availableData = await apiRequest('/staff/maintenance/');
+                const availableJobs = availableData.jobs || availableData || [];
 
-            // Extract jobs arrays handling { jobs: [] } structure
-            const availableJobs = availableData.jobs || availableData || [];
-            const myJobs = myJobsData.jobs || myJobsData || [];
-
-            console.log('Available jobs:', availableJobs);
-            console.log('My jobs:', myJobs);
-
-            // Combine jobs, prioritizing my jobs
-            const allJobs = [...myJobs];
-
-            // Add available jobs that aren't already in my jobs
-            if (Array.isArray(availableJobs)) {
-                availableJobs.forEach(job => {
-                    if (!allJobs.find(j => j.id === job.id)) {
-                        allJobs.push(job);
-                    }
-                });
+                availableContainer.innerHTML = '';
+                if (availableJobs.length === 0) {
+                    availableContainer.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 20px;">No available jobs found.</td></tr>';
+                } else {
+                    availableJobs.forEach(job => {
+                        const row = createAvailableJobRow(job);
+                        availableContainer.appendChild(row);
+                    });
+                }
             }
 
-            container.innerHTML = '';
+            // Get my assigned jobs
+            if (myJobsContainer) {
+                const myJobsData = await apiRequest('/staff/maintenance/my-jobs/');
+                const myJobs = myJobsData.jobs || myJobs || [];
 
-            if (allJobs.length === 0) {
-                container.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 20px;">No maintenance jobs available.</td></tr>';
-                return;
+                myJobsContainer.innerHTML = '';
+                if (myJobs.length === 0) {
+                    myJobsContainer.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 20px;">No assigned jobs found.</td></tr>';
+                } else {
+                    // Sort: In Progress > Assigned > Completed
+                    myJobs.sort((a, b) => {
+                        const order = { 'in_progress': 1, 'assigned': 2, 'completed': 3 };
+                        return (order[a.status] || 99) - (order[b.status] || 99);
+                    });
+
+                    myJobs.forEach(job => {
+                        const row = createMyJobRow(job);
+                        myJobsContainer.appendChild(row);
+                    });
+                }
             }
-
-            // Sort: In Progress > Assigned > Pending > Completed
-            allJobs.sort((a, b) => {
-                const order = {
-                    'in_progress': 1,
-                    'assigned': 2,
-                    'approved': 3, // approved = pending assignment
-                    'pending_assignment': 3,
-                    'completed': 4,
-                    'rejected': 5
-                };
-                // Fallback for unknown status
-                const rankA = order[a.status] || 99;
-                const rankB = order[b.status] || 99;
-
-                return rankA - rankB;
-            });
-
-            allJobs.forEach(job => {
-                const row = createJobRow(job);
-                container.appendChild(row);
-            });
 
         } catch (error) {
             console.log('Maintenance jobs load failed:', error);
-            container.innerHTML = '<tr><td colspan="7" style="text-align: center; color: red;">Failed to load jobs.</td></tr>';
+            if (availableContainer) availableContainer.innerHTML = '<tr><td colspan="6" style="text-align: center; color: red;">Failed to load jobs.</td></tr>';
+            if (myJobsContainer) myJobsContainer.innerHTML = '<tr><td colspan="6" style="text-align: center; color: red;">Failed to load jobs.</td></tr>';
         }
     }
 
-    // Helper to create job row
-    function createJobRow(job) {
+    // Create row for Available Jobs
+    function createAvailableJobRow(job) {
         const row = document.createElement('tr');
-
-        // Map backend fields
         const jobId = job.id;
         const requestCode = job.request_code || `MNT-${jobId}`;
         const roomNumber = job.room_number || job.room || 'N/A';
-        const issueType = job.issue_type || job.title || 'Maintenance Issue';
-        const description = job.description || '';
-        const studentName = job.student_name || 'Unknown';
+        const issueType = job.issue_type || job.title || 'Issue';
         const urgency = job.urgency || 'low';
-        const status = job.status || 'approved';
-
-        let statusBadge = '';
-        let actionButton = '';
-
-        // Determine badge and action based on status
-        switch (status) {
-            case 'approved':
-            case 'pending_assignment':
-                statusBadge = '<span class="badge badge-warning">Pending Assignment</span>';
-                actionButton = `
-                    <button class="btn btn-sm btn-primary" onclick="acceptJob(${jobId})">
-                        <i class="fas fa-hand-paper"></i> Accept
-                    </button>
-                `;
-                break;
-            case 'assigned':
-                statusBadge = '<span class="badge badge-info">Assigned</span>';
-                actionButton = `
-                    <button class="btn btn-sm btn-success" onclick="startJob(${jobId})">
-                        <i class="fas fa-play"></i> Start
-                    </button>
-                `;
-                break;
-            case 'in_progress':
-                statusBadge = '<span class="badge badge-primary">In Progress</span>';
-                actionButton = `
-                    <button class="btn btn-sm btn-success" onclick="completeJob(${jobId})">
-                        <i class="fas fa-check"></i> Complete
-                    </button>
-                `;
-                break;
-            case 'completed':
-                statusBadge = '<span class="badge badge-success">Completed</span>';
-                actionButton = '<span class="text-muted"><i class="fas fa-check-circle"></i> Done</span>';
-                break;
-            default:
-                statusBadge = `<span class="badge badge-secondary">${status.replace(/_/g, ' ')}</span>`;
-                actionButton = '-';
-        }
+        const date = formatDate(job.reported_date || job.created_at);
 
         // Urgency badge
         const urgencyClass = urgency === 'high' ? 'badge-danger' :
@@ -165,25 +112,83 @@ document.addEventListener('DOMContentLoaded', async function () {
         row.innerHTML = `
             <td><strong>${requestCode}</strong></td>
             <td>${roomNumber}</td>
+            <td>${formatIssueType(issueType)}</td>
+            <td>${urgencyBadge}</td>
+            <td>${date}</td>
             <td>
-                <div><strong>${issueType}</strong></div>
-                <small class="text-muted">${description.substring(0, 30)}${description.length > 30 ? '...' : ''}</small>
+                <button class="btn btn-sm btn-primary" onclick="acceptJob(${jobId})">
+                    <i class="fas fa-hand-paper"></i> Accept
+                </button>
             </td>
-            <td>${studentName}</td>
+        `;
+        return row;
+    }
+
+    // Create row for My Jobs
+    function createMyJobRow(job) {
+        const row = document.createElement('tr');
+        const jobId = job.id;
+        const requestCode = job.request_code || `MNT-${jobId}`;
+        const roomNumber = job.room_number || job.room || 'N/A';
+        const issueType = job.issue_type || job.title || 'Issue';
+        const urgency = job.urgency || 'low';
+        const status = job.status || 'assigned';
+
+        // Urgency badge
+        const urgencyClass = urgency === 'high' ? 'badge-danger' :
+            urgency === 'medium' ? 'badge-warning' : 'badge-success';
+        const urgencyBadge = `<span class="badge ${urgencyClass}">${urgency.toUpperCase()}</span>`;
+
+        let statusBadge = '';
+        let actionButton = '';
+
+        if (status === 'assigned') {
+            statusBadge = '<span class="badge badge-info">Assigned</span>';
+            actionButton = `
+                <button class="btn btn-sm btn-success" onclick="startJob(${jobId})">
+                    <i class="fas fa-play"></i> Start
+                </button>
+            `;
+        } else if (status === 'in_progress') {
+            statusBadge = '<span class="badge badge-primary">In Progress</span>';
+            actionButton = `
+                <button class="btn btn-sm btn-success" onclick="completeJob(${jobId})">
+                    <i class="fas fa-check"></i> Complete
+                </button>
+            `;
+        } else if (status === 'completed') {
+            statusBadge = '<span class="badge badge-success">Completed</span>';
+            actionButton = '<span class="text-muted"><i class="fas fa-check-circle"></i> Done</span>';
+        } else {
+            statusBadge = `<span class="badge badge-secondary">${status}</span>`;
+            actionButton = '-';
+        }
+
+        row.innerHTML = `
+            <td><strong>${requestCode}</strong></td>
+            <td>${roomNumber}</td>
+            <td>${formatIssueType(issueType)}</td>
             <td>${urgencyBadge}</td>
             <td>${statusBadge}</td>
             <td>${actionButton}</td>
         `;
-
         return row;
     }
+
+    function formatIssueType(type) {
+        if (!type) return 'Other';
+        return type.charAt(0).toUpperCase() + type.slice(1).replace(/_/g, ' ');
+    }
+
+    // Helper to create job row
+
 
     // Accept Job
     window.acceptJob = async function (jobId) {
         if (!confirm('Are you sure you want to accept this job?')) return;
 
         try {
-            await apiRequest(`/staff/maintenance/${jobId}/accept/`, { method: 'POST' });
+            await apiRequest(`/staff/maintenance/${jobId}/accept/`, { method: 'PUT' });
             showAlert('Job accepted successfully!', 'success');
             loadMaintenanceJobs();
             loadDashboardData();
@@ -196,7 +201,7 @@ document.addEventListener('DOMContentLoaded', async function () {
     // Start Job
     window.startJob = async function (jobId) {
         try {
-            await apiRequest(`/staff/maintenance/${jobId}/start/`, { method: 'POST' });
+            await apiRequest(`/staff/maintenance/${jobId}/start/`, { method: 'PUT' });
             showAlert('Work started!', 'success');
             loadMaintenanceJobs();
             loadDashboardData();
@@ -212,7 +217,7 @@ document.addEventListener('DOMContentLoaded', async function () {
 
         try {
             await apiRequest(`/staff/maintenance/${jobId}/complete/`, {
-                method: 'POST',
+                method: 'PUT',
                 body: JSON.stringify({ notes: notes || '' })
             });
             showAlert('Job marked as completed!', 'success');
