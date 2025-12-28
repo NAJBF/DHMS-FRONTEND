@@ -358,6 +358,7 @@ document.addEventListener('DOMContentLoaded', async function () {
 
     // Process scanned QR code
     // Process scanned QR code
+    // Process scanned QR code
     async function processQRCode(qrData) {
         const resultDiv = document.getElementById('scanResult');
         console.log('Processing QR code:', qrData);
@@ -367,83 +368,109 @@ document.addEventListener('DOMContentLoaded', async function () {
             resultDiv.innerHTML = `
                 <div class="scan-result-card">
                     <h4><i class="fas fa-spinner fa-spin"></i> Processing...</h4>
-                    <p><strong>Data:</strong> ${qrData}</p>
+                    <p><strong>Processing URL...</strong></p>
                 </div>
             `;
         }
 
-        let formId = null;
-        let formCode = null;
+        let cleanData = qrData.trim();
 
-        // Extraction Strategy:
-        // 1. Extract potential code/ID from URL or string
-        // 2. Map code to ID using loaded pending list (if available)
-        // 3. Fallback to using extracted value as ID
+        // Check if it matches the API base URL structure to extract relative path
+        // API_BASE_URL is typically https://dhms-b8w3.onrender.com/aau-dhms-api
+        // We want to extract /public/laundry/LAU-2025-7AE938/taken/
+
+        let apiPath = null;
+        let formCode = 'UNKNOWN'; // For display
 
         try {
-            // Clean input
-            let cleanData = qrData.trim();
-            if (cleanData.endsWith('/')) cleanData = cleanData.slice(0, -1);
+            // Simple heuristic: valid URL containing /aau-dhms-api/
+            if (cleanData.includes('/aau-dhms-api/')) {
+                const parts = cleanData.split('/aau-dhms-api/');
+                if (parts.length > 1) {
+                    apiPath = '/' + parts[1]; // e.g. /public/laundry/LAU-xxx/taken/
+                }
+            } else if (cleanData.startsWith('http') && cleanData.includes('/laundry/')) {
+                // Try to guess if base URL is missing or different
+                const urlObj = new URL(cleanData);
+                // Assuming the path part is what we want if it starts with /public or /security
+                apiPath = urlObj.pathname;
 
+                // If pathname includes /aau-dhms-api/, strip it because apiRequest adds it back?
+                // Wait, apiRequest helper PREPENDS API_BASE_URL.
+                // If strip /aau-dhms-api/, we get /public/...
+                // apiRequest will make it https://.../aau-dhms-api/public/...
+                // This matches perfectly.
+                if (apiPath.startsWith('/aau-dhms-api/')) {
+                    apiPath = apiPath.replace('/aau-dhms-api/', '/');
+                }
+            }
+
+            // Extract code for display
             if (cleanData.includes('/laundry/')) {
-                // Handle URL format: .../laundry/{ID_OR_CODE} or .../laundry/{ID_OR_CODE}/taken
                 const parts = cleanData.split('/');
-                const lastPart = parts[parts.length - 1];
-
-                if (lastPart.toLowerCase() === 'taken') {
-                    formCode = parts[parts.length - 2];
+                const takenIndex = parts.indexOf('taken');
+                if (takenIndex > 0) {
+                    formCode = parts[takenIndex - 1]; // Item before 'taken'
                 } else {
-                    formCode = lastPart;
-                }
-            } else {
-                // Try JSON or raw string
-                try {
-                    const obj = JSON.parse(cleanData);
-                    if (obj.id) formId = obj.id;
-                    if (obj.form_code) formCode = obj.form_code;
-                } catch (e) {
-                    formCode = cleanData;
+                    // try last part
+                    formCode = parts[parts.length - 1] || parts[parts.length - 2];
                 }
             }
+
         } catch (e) {
-            console.error('Extraction error:', e);
+            console.error('URL parse error', e);
         }
 
-        // Try to lookup ID if we have a code but no ID
-        if (!formId && formCode) {
-            // Check if formCode is actually a numeric ID
-            if (!isNaN(formCode)) {
-                formId = formCode;
-            } else {
-                // It's a string code (e.g. LAU-123). Look for it in the pending list
-                const card = document.querySelector(`.verification-card[data-form-code="${formCode}"]`);
-                if (card) {
-                    formId = card.dataset.formId;
-                    console.log(`Mapped code ${formCode} to ID ${formId}`);
-                } else {
-                    // Not found in pending list. 
-                    // This is risky, but try sending the code as ID if backend supports it.
-                    // Or, the user might be scanning a code that is not currently "pending verification" in the dashboard list.
-                    // But typically security guards verify pending items.
-                    console.warn(`Code ${formCode} not found in pending list.`);
+        if (apiPath) {
+            // Direct API call to the scanned URL path
+            console.log('Making direct API call to:', apiPath);
+            try {
+                // Remove double slashes if any
+                apiPath = apiPath.replace('//', '/');
+
+                await apiRequest(apiPath, {
+                    method: 'PUT'
+                });
+
+                showAlert(`Processed successfully: ${formCode}`, 'success');
+
+                if (resultDiv) {
+                    resultDiv.innerHTML = `
+                        <div class="scan-result-card success">
+                            <h4><i class="fas fa-check-circle"></i> Success!</h4>
+                            <p><strong>Form:</strong> ${formCode}</p>
+                            <p>Action Completed (Taken Out)</p>
+                        </div>
+                    `;
+                }
+
+                // Refresh data
+                await loadDashboardData();
+
+            } catch (error) {
+                console.error('Direct scan error:', error);
+                showAlert(`Failed: ${error.message}`, 'error');
+                if (resultDiv) {
+                    resultDiv.innerHTML = `
+                        <div class="scan-result-card error">
+                            <h4><i class="fas fa-times-circle"></i> Error</h4>
+                            <p>${error.message}</p>
+                        </div>
+                    `;
                 }
             }
-        }
 
-        if (formId) {
-            // We have an ID, call the taken-out endpoint directly
-            await markLaundryTakenOut(formId, formCode || formId, true);
-        } else if (formCode) {
-            // We have a code but couldn't map to ID. Try using code directly.
-            // The backend might accept the code slug.
-            await markLaundryTakenOut(formCode, formCode, true);
         } else {
-            showAlert(`Could not extract Form ID from QR`, 'error');
+            // Fallback to old logic (local ID lookup) only if NOT a URL or URL parse failed
+            // ... [Existing fallback logic if needed, but user seems focused on URL support]
+            // For now, let's just error if it's not the URL format expected.
+
+            showAlert(`Note: Use the specific "Taken Out" QR code.`, 'warning');
             if (resultDiv) {
                 resultDiv.innerHTML = `
                     <div class="scan-result-card error">
                         <h4><i class="fas fa-times-circle"></i> Error</h4>
-                        <p>Invalid QR Format</p>
+                        <p>Invalid QR URL Format</p>
                     </div>
                 `;
             }
