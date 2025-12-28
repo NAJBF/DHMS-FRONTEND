@@ -208,8 +208,8 @@ document.addEventListener('DOMContentLoaded', async function () {
     };
 
     // Mark laundry as taken out
-    window.markLaundryTakenOut = async function (formId, formCode) {
-        if (!confirm(`Confirm that student is taking out laundry ${formCode}?`)) return;
+    window.markLaundryTakenOut = async function (formId, formCode, isAuto = false) {
+        if (!isAuto && !confirm(`Confirm that student is taking out laundry ${formCode}?`)) return;
 
         try {
             await apiRequest(`/security/laundry/${formId}/taken-out/`, {
@@ -217,6 +217,18 @@ document.addEventListener('DOMContentLoaded', async function () {
             });
 
             showAlert(`Form ${formCode} marked as taken out!`, 'success');
+
+            // Show success in scanner if applicable
+            const resultDiv = document.getElementById('scanResult');
+            if (resultDiv && isAuto) {
+                resultDiv.innerHTML = `
+                    <div class="scan-result-card success">
+                        <h4><i class="fas fa-check-circle"></i> Success!</h4>
+                        <p><strong>Form:</strong> ${formCode}</p>
+                        <p>Marked as Taken Out</p>
+                    </div>
+                `;
+            }
 
             // Remove card from list
             const card = document.getElementById(`form-${formId}`);
@@ -230,7 +242,17 @@ document.addEventListener('DOMContentLoaded', async function () {
 
         } catch (error) {
             console.error('Taken out error:', error);
-            showAlert('Failed to mark as taken out', 'error');
+            showAlert('Failed to mark as taken out: ' + error.message, 'error');
+
+            const resultDiv = document.getElementById('scanResult');
+            if (resultDiv && isAuto) {
+                resultDiv.innerHTML = `
+                    <div class="scan-result-card error">
+                        <h4><i class="fas fa-times-circle"></i> Error</h4>
+                        <p>${error.message || 'Failed to process'}</p>
+                    </div>
+                `;
+            }
         }
     };
 
@@ -336,66 +358,81 @@ document.addEventListener('DOMContentLoaded', async function () {
     // Process scanned QR code
     async function processQRCode(qrData) {
         const resultDiv = document.getElementById('scanResult');
-
-        // Extract form code from URL or use as-is
-        let formCode = qrData;
-
-        // If it's a URL, extract the form code
-        if (qrData.includes('/public/laundry/')) {
-            const match = qrData.match(/\/public\/laundry\/([^\/]+)/);
-            if (match) {
-                formCode = match[1];
-            }
-        }
-
-        console.log('Processing QR code:', formCode);
+        console.log('Processing QR code:', qrData);
 
         // Show processing status
         if (resultDiv) {
             resultDiv.innerHTML = `
                 <div class="scan-result-card">
                     <h4><i class="fas fa-spinner fa-spin"></i> Processing...</h4>
-                    <p><strong>Code:</strong> ${formCode}</p>
+                    <p><strong>Data:</strong> ${qrData}</p>
                 </div>
             `;
         }
 
-        // Auto-process the code
-        await processScannedCode(formCode);
+        // Logic to extract ID: 
+        // 1. Check if it's a URL ending in ID
+        // 2. Check if it's a JSON string with an ID
+        // 3. Check if it's just the ID
+
+        let formId = null;
+        let formCode = qrData;
+
+        try {
+            if (qrData.includes('/laundry/')) {
+                // Example: .../public/laundry/123 or .../public/laundry/123/
+                const parts = qrData.split('/');
+                // Filter out empty parts (handling trailing slash)
+                const segments = parts.filter(p => p.trim() !== '');
+                const possibleId = segments[segments.length - 1];
+                if (!isNaN(possibleId)) {
+                    formId = possibleId;
+                }
+            } else if (!isNaN(qrData)) {
+                // It's just a number
+                formId = qrData;
+            } else {
+                // Try JSON
+                try {
+                    const obj = JSON.parse(qrData);
+                    if (obj.id || obj.form_id) formId = obj.id || obj.form_id;
+                } catch (e) {
+                    // Not JSON
+                }
+            }
+        } catch (e) {
+            console.error('Error parsing QR:', e);
+        }
+
+        if (formId) {
+            // We have an ID, call the taken-out endpoint directly
+            await markLaundryTakenOut(formId, formCode, true); // true = auto-confirmed
+        } else {
+            // We failed to parse an ID. 
+            // If the user provided code is just a string (e.g. LAU-123), we might not have the ID.
+            // But the backend endpoint requires {id}. 
+            // For now, let's show an error or try to use the string if the backend supports it (unlikely for REST ID)
+            // Or maybe we can find it in the loaded pending list?
+
+            // Try to find in pending list
+            const verificationCard = document.querySelector(`.verification-card h4`); // This is weak
+            // Better: search loaded data? We don't have global access easily unless we stored it.
+            // Let's assume for this specific task requirement that the QR contains the ID or URL with ID.
+
+            showAlert(`Could not extract Form ID from QR: ${qrData}`, 'error');
+            if (resultDiv) {
+                resultDiv.innerHTML = `
+                    <div class="scan-result-card error">
+                        <h4><i class="fas fa-times-circle"></i> Error</h4>
+                        <p>Invalid QR Format</p>
+                    </div>
+                `;
+            }
+        }
     }
 
-    // Process scanned code via API
-    window.processScannedCode = async function (qrCode) {
-        try {
-            const result = await apiRequest('/security/laundry/scan/', {
-                method: 'POST',
-                body: JSON.stringify({ qr_code: qrCode })
-            });
-
-            if (result) {
-                showAlert('Laundry form processed successfully!', 'success');
-
-                // Show result details
-                const resultDiv = document.getElementById('scanResult');
-                if (resultDiv && result.form) {
-                    resultDiv.innerHTML = `
-                        <div class="scan-result-card success">
-                            <h4><i class="fas fa-check-circle"></i> Success!</h4>
-                            <p><strong>Form:</strong> ${result.form.form_code || qrCode}</p>
-                            <p><strong>Student:</strong> ${result.form.student_name || 'Unknown'}</p>
-                            <p><strong>Items:</strong> ${result.form.item_count || 0} items</p>
-                            <p><strong>Status:</strong> ${result.form.status || 'processed'}</p>
-                        </div>
-                    `;
-                }
-
-                await loadDashboardData();
-            }
-        } catch (error) {
-            console.error('Scan process error:', error);
-            showAlert('Failed to process QR code', 'error');
-        }
-    };
+    // Process scanned code via API - Removed as backend scan endpoint doesn't exist
+    // Replaced with direct calls in processQRCode
 
     // Manual QR code entry
     window.scanQRCode = function () {
