@@ -372,56 +372,73 @@ document.addEventListener('DOMContentLoaded', async function () {
             `;
         }
 
-        // Logic to extract ID: 
-        // 1. Check if it's a URL ending in ID
-        // 2. Check if it's a JSON string with an ID
-        // 3. Check if it's just the ID
-
         let formId = null;
-        let formCode = qrData;
+        let formCode = null;
+
+        // Extraction Strategy:
+        // 1. Extract potential code/ID from URL or string
+        // 2. Map code to ID using loaded pending list (if available)
+        // 3. Fallback to using extracted value as ID
 
         try {
-            if (qrData.includes('/laundry/')) {
-                // Example: .../public/laundry/123 or .../public/laundry/123/
-                const parts = qrData.split('/');
-                // Filter out empty parts (handling trailing slash)
-                const segments = parts.filter(p => p.trim() !== '');
-                const possibleId = segments[segments.length - 1];
-                if (!isNaN(possibleId)) {
-                    formId = possibleId;
+            // Clean input
+            let cleanData = qrData.trim();
+            if (cleanData.endsWith('/')) cleanData = cleanData.slice(0, -1);
+
+            if (cleanData.includes('/laundry/')) {
+                // Handle URL format: .../laundry/{ID_OR_CODE} or .../laundry/{ID_OR_CODE}/taken
+                const parts = cleanData.split('/');
+                const lastPart = parts[parts.length - 1];
+
+                if (lastPart.toLowerCase() === 'taken') {
+                    formCode = parts[parts.length - 2];
+                } else {
+                    formCode = lastPart;
                 }
-            } else if (!isNaN(qrData)) {
-                // It's just a number
-                formId = qrData;
             } else {
-                // Try JSON
+                // Try JSON or raw string
                 try {
-                    const obj = JSON.parse(qrData);
-                    if (obj.id || obj.form_id) formId = obj.id || obj.form_id;
+                    const obj = JSON.parse(cleanData);
+                    if (obj.id) formId = obj.id;
+                    if (obj.form_code) formCode = obj.form_code;
                 } catch (e) {
-                    // Not JSON
+                    formCode = cleanData;
                 }
             }
         } catch (e) {
-            console.error('Error parsing QR:', e);
+            console.error('Extraction error:', e);
+        }
+
+        // Try to lookup ID if we have a code but no ID
+        if (!formId && formCode) {
+            // Check if formCode is actually a numeric ID
+            if (!isNaN(formCode)) {
+                formId = formCode;
+            } else {
+                // It's a string code (e.g. LAU-123). Look for it in the pending list
+                const card = document.querySelector(`.verification-card[data-form-code="${formCode}"]`);
+                if (card) {
+                    formId = card.dataset.formId;
+                    console.log(`Mapped code ${formCode} to ID ${formId}`);
+                } else {
+                    // Not found in pending list. 
+                    // This is risky, but try sending the code as ID if backend supports it.
+                    // Or, the user might be scanning a code that is not currently "pending verification" in the dashboard list.
+                    // But typically security guards verify pending items.
+                    console.warn(`Code ${formCode} not found in pending list.`);
+                }
+            }
         }
 
         if (formId) {
             // We have an ID, call the taken-out endpoint directly
-            await markLaundryTakenOut(formId, formCode, true); // true = auto-confirmed
+            await markLaundryTakenOut(formId, formCode || formId, true);
+        } else if (formCode) {
+            // We have a code but couldn't map to ID. Try using code directly.
+            // The backend might accept the code slug.
+            await markLaundryTakenOut(formCode, formCode, true);
         } else {
-            // We failed to parse an ID. 
-            // If the user provided code is just a string (e.g. LAU-123), we might not have the ID.
-            // But the backend endpoint requires {id}. 
-            // For now, let's show an error or try to use the string if the backend supports it (unlikely for REST ID)
-            // Or maybe we can find it in the loaded pending list?
-
-            // Try to find in pending list
-            const verificationCard = document.querySelector(`.verification-card h4`); // This is weak
-            // Better: search loaded data? We don't have global access easily unless we stored it.
-            // Let's assume for this specific task requirement that the QR contains the ID or URL with ID.
-
-            showAlert(`Could not extract Form ID from QR: ${qrData}`, 'error');
+            showAlert(`Could not extract Form ID from QR`, 'error');
             if (resultDiv) {
                 resultDiv.innerHTML = `
                     <div class="scan-result-card error">
