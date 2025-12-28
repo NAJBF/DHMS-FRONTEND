@@ -214,7 +214,7 @@ document.addEventListener('DOMContentLoaded', async function () {
         if (!isAuto && !confirm(`Confirm that student is taking out laundry ${formCode}?`)) return;
 
         try {
-            await apiRequest(`/security/laundry/${formId}/taken-out/`, {
+            await apiRequest(`/security/laundry/${formId}/taken/`, {
                 method: 'PUT'
             });
 
