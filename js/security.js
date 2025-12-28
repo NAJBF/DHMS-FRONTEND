@@ -333,6 +333,7 @@ document.addEventListener('DOMContentLoaded', async function () {
     }
 
     // Process scanned QR code
+    // Process scanned QR code
     async function processQRCode(qrData) {
         const resultDiv = document.getElementById('scanResult');
 
@@ -349,21 +350,18 @@ document.addEventListener('DOMContentLoaded', async function () {
 
         console.log('Processing QR code:', formCode);
 
+        // Show processing status
         if (resultDiv) {
             resultDiv.innerHTML = `
                 <div class="scan-result-card">
-                    <h4><i class="fas fa-qrcode"></i> QR Code Scanned</h4>
-                    <p><strong>Form Code:</strong> ${formCode}</p>
-                    <div class="scan-actions">
-                        <button class="btn btn-success" onclick="processScannedCode('${formCode}')">
-                            <i class="fas fa-check"></i> Process
-                        </button>
-                    </div>
+                    <h4><i class="fas fa-spinner fa-spin"></i> Processing...</h4>
+                    <p><strong>Code:</strong> ${formCode}</p>
                 </div>
             `;
         }
 
-        showAlert(`QR code scanned: ${formCode}`, 'success');
+        // Auto-process the code
+        await processScannedCode(formCode);
     }
 
     // Process scanned code via API
