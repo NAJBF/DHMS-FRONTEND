@@ -133,8 +133,10 @@ document.addEventListener('DOMContentLoaded', async function () {
         const card = document.createElement('div');
         card.className = 'verification-card';
         card.id = `form-${form.id}`;
-
         const formCode = form.form_code || `LAU-${form.id}`;
+        card.dataset.formId = form.id;
+        card.dataset.formCode = formCode;
+
         const studentName = form.student_name || 'Unknown Student';
         const studentCode = form.student_code || '';
         const itemCount = form.item_count || 0;
