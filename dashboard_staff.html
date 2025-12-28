@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,6 +8,7 @@
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
+
 <body>
     <!-- Sidebar -->
     <div class="sidebar">
@@ -16,20 +18,21 @@
                 <h2>Staff</h2>
             </div>
             <div class="user-info">
-                <img id="sidebarAvatar" src="https://ui-avatars.com/api/?name=Staff&background=FFC107&color=fff" alt="User">
+                <img id="sidebarAvatar" src="https://ui-avatars.com/api/?name=Staff&background=FFC107&color=fff"
+                    alt="User">
                 <div>
                     <h4 id="sidebarName">Loading...</h4>
                     <small id="sidebarRole">Role</small>
                 </div>
             </div>
         </div>
-        
+
         <nav class="sidebar-nav">
             <ul>
                 <li><a href="dashboard_staff.html" class="active"><i class="fas fa-home"></i> Dashboard</a></li>
             </ul>
         </nav>
-        
+
         <div class="sidebar-footer">
             <button onclick="logout()" class="btn-logout">
                 <i class="fas fa-sign-out-alt"></i>
@@ -37,7 +40,7 @@
             </button>
         </div>
     </div>
-    
+
     <!-- Main Content -->
     <div class="main-content">
         <!-- Top Navigation -->
@@ -52,50 +55,129 @@
                 <span id="currentSection">Maintenance Jobs</span>
             </div>
         </header>
-        
+
         <!-- Dashboard Content -->
         <main class="content">
             <!-- Maintenance Section -->
             <div id="maintenanceSection" class="section active-section">
-                <div class="card">
-                    <div class="card-header">
-                        <h3>Maintenance Jobs</h3>
-                        <div class="job-stats">
-                            <span class="stat-badge pending" id="pendingJobsCount">0 Pending</span>
-                            <span class="stat-badge in-progress" id="inProgressJobsCount">0 In Progress</span>
-                            <span class="stat-badge completed" id="completedJobsCount">0 Completed</span>
+                <div class="tabs-container">
+                    <button class="tab-btn active" onclick="switchTab('my-jobs')">My Assigned Jobs</button>
+                    <button class="tab-btn" onclick="switchTab('available-jobs')">Available Jobs</button>
+                </div>
+
+                <!-- My Jobs Tab -->
+                <div id="myIds-jobs-content" class="tab-content active">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>My Assigned Jobs</h3>
+                        </div>
+                        <div class="card-body">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Job ID</th>
+                                        <th>Room</th>
+                                        <th>Issue</th>
+                                        <th>Urgency</th>
+                                        <th>Status</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="myJobsTable">
+                                    <!-- My Jobs will be dynamically loaded here -->
+                                </tbody>
+                            </table>
                         </div>
                     </div>
-                    <div class="card-body">
-                        <table class="table">
-                            <thead>
-                                <tr>
-                                    <th>Job ID</th>
-                                    <th>Room</th>
-                                    <th>Issue</th>
-                                    <th>Student</th>
-                                    <th>Urgency</th>
-                                    <th>Status</th>
-                                    <th>Action</th>
-                                </tr>
-                            </thead>
-                            <tbody id="maintenanceJobsTable">
-                                <!-- Jobs will be dynamically loaded here -->
-                            </tbody>
-                        </table>
+                </div>
+
+                <!-- Available Jobs Tab -->
+                <div id="available-jobs-content" class="tab-content" style="display: none;">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>Available Jobs</h3>
+                        </div>
+                        <div class="card-body">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Job ID</th>
+                                        <th>Room</th>
+                                        <th>Issue</th>
+                                        <th>Urgency</th>
+                                        <th>Date</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="availableJobsTable">
+                                    <!-- Available Jobs will be dynamically loaded here -->
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
+
+                <style>
+                    .tabs-container {
+                        display: flex;
+                        gap: 10px;
+                        margin-bottom: 20px;
+                    }
+
+                    .tab-btn {
+                        padding: 10px 20px;
+                        border: none;
+                        background: #e9ecef;
+                        border-radius: 5px;
+                        cursor: pointer;
+                        font-weight: 600;
+                        transition: all 0.3s;
+                    }
+
+                    .tab-btn.active {
+                        background: #007bff;
+                        color: white;
+                    }
+                </style>
+
+                <script>
+                    function switchTab(tabId) {
+                        // Update buttons
+                        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+                        event.target.classList.add('active');
+
+                        // Update content
+                        document.querySelectorAll('.tab-content').forEach(content => {
+                            content.style.display = 'none';
+                            content.classList.remove('active');
+                        });
+
+                        const activeContent = document.getElementById(tabId + '-content');
+                        if (activeContent) {
+                            activeContent.style.display = 'block';
+                            activeContent.classList.add('active');
+                        } else {
+                            // Legacy ID specific fix if needed or typo
+                            const altId = tabId === 'my-jobs' ? 'myIds-jobs-content' : tabId + '-content';
+                            const altContent = document.getElementById(altId);
+                            if (altContent) {
+                                altContent.style.display = 'block';
+                                altContent.classList.add('active');
+                            }
+                        }
+                    }
+                </script>
             </div>
         </main>
-        
+
         <footer class="footer">
             <p>&copy; 2024 AAU - Staff Portal</p>
         </footer>
     </div>
-    
+
     <script src="js/common.js"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             try {
                 const user = JSON.parse(localStorage.getItem('user')) || {};
                 if (user) {
@@ -106,7 +188,7 @@
                     if (roleEl) roleEl.textContent = (user.role || '').toString();
                     if (avatar) {
                         if (user.photo) avatar.src = user.photo;
-                        else avatar.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name||user.username||'User')}&background=FFC107&color=fff`;
+                        else avatar.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name || user.username || 'User')}&background=FFC107&color=fff`;
                     }
                 }
             } catch (e) {
@@ -116,4 +198,5 @@
     </script>
     <script src="js/staff.js"></script>
 </body>
+
 </html>
