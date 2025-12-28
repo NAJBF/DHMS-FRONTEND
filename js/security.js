@@ -429,7 +429,7 @@ document.addEventListener('DOMContentLoaded', async function () {
                 apiPath = apiPath.replace('//', '/');
 
                 await apiRequest(apiPath, {
-                    method: 'PUT'
+                    method: 'GET'
                 });
 
                 showAlert(`Processed successfully: ${formCode}`, 'success');
