@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Security Dashboard - DHMS</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- QR Code Scanner Library -->
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+</head>
+
+<body>
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <i class="fas fa-shield-alt"></i>
+                <h2>Security</h2>
+            </div>
+            <div class="user-info">
+                <img id="sidebarAvatar" src="https://ui-avatars.com/api/?name=Security&background=28A745&color=fff"
+                    alt="User">
+                <div>
+                    <h4 id="sidebarName">Loading...</h4>
+                    <small id="sidebarRole">Role</small>
+                </div>
+            </div>
+        </div>
+
+        <nav class="sidebar-nav">
+            <ul>
+                <li><a href="#" onclick="showSection('dashboard')" class="active"><i class="fas fa-home"></i>
+                        Dashboard</a></li>
+                <li><a href="#" onclick="showSection('verification')"><i class="fas fa-tshirt"></i> Laundry
+                        Verification</a>
+                </li>
+                <li><a href="#" onclick="showSection('scanner')"><i class="fas fa-qrcode"></i> QR Code Scanner</a></li>
+            </ul>
+        </nav>
+
+        <div class="sidebar-footer">
+            <button onclick="logout()" class="btn-logout">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>Logout</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Top Navigation -->
+        <header class="top-nav">
+            <div class="nav-left">
+                <button class="menu-toggle" id="menuToggle">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <h3>Security Dashboard</h3>
+            </div>
+            <div class="nav-right">
+                <span id="currentSection">Dashboard</span>
+            </div>
+        </header>
+
+        <!-- Dashboard Content -->
+        <main class="content">
+            <!-- Dashboard Overview -->
+            <div id="dashboardSection" class="section active-section">
+                <div class="dashboard-card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-chart-line"></i> Security Overview</h3>
+                    </div>
+                    <div class="card-body">
+                        <p class="card-subtitle">Monitor student movements and verify laundry forms</p>
+                    </div>
+                </div>
+
+                <!-- Stats Cards -->
+                <div class="welcome-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-user-check"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="studentsInCampus">0</h3>
+                            <p>Students In Campus</p>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-user-times"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="studentsOutCampus">0</h3>
+                            <p>Students Out of Campus</p>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-tshirt"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="pendingLaundry">0</h3>
+                            <p>Pending Laundry</p>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-qrcode"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="scannedToday">0</h3>
+                            <p>Scanned Today</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Laundry Verification -->
+            <div id="verificationSection" class="section" style="display: none;">
+                <div class="card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-clipboard-check"></i> Laundry Forms Verification</h3>
+                    </div>
+                    <div class="card-body">
+                        <div id="laundryVerificationList">
+                            <div class="no-data"><i class="fas fa-spinner fa-spin"></i>
+                                <p>Loading...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- QR Code Scanner -->
+            <div id="scannerSection" class="section" style="display: none;">
+                <div class="card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-qrcode"></i> QR Code Scanner</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="scanner-container">
+                            <!-- Camera Scanner Area -->
+                            <div class="scanner-area" id="scannerArea">
+                                <video id="qrVideo"
+                                    style="display: none; width: 100%; max-width: 400px; border-radius: 8px;"></video>
+                                <canvas id="qrCanvas" style="display: none;"></canvas>
+                                <div class="scanner-placeholder" id="scannerPlaceholder">
+                                    <i class="fas fa-camera"></i>
+                                    <p>Scan Laundry QR Code</p>
+                                    <small>Click "Start Camera" to begin scanning</small>
+                                </div>
+                            </div>
+
+                            <!-- Camera Controls -->
+                            <div class="scanner-controls">
+                                <button class="btn btn-primary" id="startScanner">
+                                    <i class="fas fa-video"></i> Start Camera
+                                </button>
+                                <button class="btn btn-danger" id="stopScanner" style="display: none;">
+                                    <i class="fas fa-stop"></i> Stop Camera
+                                </button>
+                            </div>
+
+                            <!-- Manual Entry -->
+                            <div class="manual-entry">
+                                <h4><i class="fas fa-keyboard"></i> Manual Entry</h4>
+                                <div class="form-group">
+                                    <label>Enter Form Code</label>
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" id="scanInput"
+                                            placeholder="Enter form code (e.g., LAU-2025-XXXXXX)">
+                                        <button class="btn btn-primary" onclick="scanQRCode()">
+                                            <i class="fas fa-search"></i> Verify
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Scan Result -->
+                            <div id="scanResult" class="scan-result">
+                                <!-- Scan results will appear here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer class="footer">
+            <p>&copy; 2024 AAU - Security Portal</p>
+        </footer>
+    </div>
+
+    <script src="js/common.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            try {
+                const user = JSON.parse(localStorage.getItem('user')) || {};
+                if (user) {
+                    const nameEl = document.getElementById('securityName');
+                    const avatar = document.getElementById('sidebarAvatar');
+                    if (nameEl) nameEl.textContent = user.name || user.full_name || user.username || 'Security';
+                    if (avatar) {
+                        if (user.photo) avatar.src = user.photo;
+                        else avatar.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name || user.username || 'User')}&background=28A745&color=fff`;
+                    }
+                }
+            } catch (e) {
+                // ignore
+            }
+        });
+    </script>
+    <script src="js/security.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Staff Dashboard - DHMS</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <i class="fas fa-tools"></i>
+                <h2>Staff</h2>
+            </div>
+            <div class="user-info">
+                <img id="sidebarAvatar" src="https://ui-avatars.com/api/?name=Staff&background=FFC107&color=fff" alt="User">
+                <div>
+                    <h4 id="sidebarName">Loading...</h4>
+                    <small id="sidebarRole">Role</small>
+                </div>
+            </div>
+        </div>
+        
+        <nav class="sidebar-nav">
+            <ul>
+                <li><a href="dashboard_staff.html" class="active"><i class="fas fa-home"></i> Dashboard</a></li>
+            </ul>
+        </nav>
+        
+        <div class="sidebar-footer">
+            <button onclick="logout()" class="btn-logout">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>Logout</span>
+            </button>
+        </div>
+    </div>
+    
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Top Navigation -->
+        <header class="top-nav">
+            <div class="nav-left">
+                <button class="menu-toggle" id="menuToggle">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <h3>Staff Dashboard</h3>
+            </div>
+            <div class="nav-right">
+                <span id="currentSection">Maintenance Jobs</span>
+            </div>
+        </header>
+        
+        <!-- Dashboard Content -->
+        <main class="content">
+            <!-- Maintenance Section -->
+            <div id="maintenanceSection" class="section active-section">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Maintenance Jobs</h3>
+                        <div class="job-stats">
+                            <span class="stat-badge pending" id="pendingJobsCount">0 Pending</span>
+                            <span class="stat-badge in-progress" id="inProgressJobsCount">0 In Progress</span>
+                            <span class="stat-badge completed" id="completedJobsCount">0 Completed</span>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Job ID</th>
+                                    <th>Room</th>
+                                    <th>Issue</th>
+                                    <th>Student</th>
+                                    <th>Urgency</th>
+                                    <th>Status</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="maintenanceJobsTable">
+                                <!-- Jobs will be dynamically loaded here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+        
+        <footer class="footer">
+            <p>&copy; 2024 AAU - Staff Portal</p>
+        </footer>
+    </div>
+    
+    <script src="js/common.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            try {
+                const user = JSON.parse(localStorage.getItem('user')) || {};
+                if (user) {
+                    const nameEl = document.getElementById('sidebarName');
+                    const roleEl = document.getElementById('sidebarRole');
+                    const avatar = document.getElementById('sidebarAvatar');
+                    if (nameEl) nameEl.textContent = user.name || user.username || 'User';
+                    if (roleEl) roleEl.textContent = (user.role || '').toString();
+                    if (avatar) {
+                        if (user.photo) avatar.src = user.photo;
+                        else avatar.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name||user.username||'User')}&background=FFC107&color=fff`;
+                    }
+                }
+            } catch (e) {
+                // ignore
+            }
+        });
+    </script>
+    <script src="js/staff.js"></script>
+</body>
+</html>

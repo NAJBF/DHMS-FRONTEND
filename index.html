@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DHMS - Login</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="login-page">
+    <div class="login-container">
+        <div class="login-header">
+            <div class="logo">
+                <img src="assets/aauLogo.png" alt="AAU">
+                <h1>AAU DHMS</h1>
+            </div>
+            <h2>Dormitory & Housing Management System</h2>
+            <p>Addis Ababa University</p>
+        </div>
+
+        <div class="login-card">
+            <h3>Sign In</h3>
+
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="username">
+                        <i class="fas fa-user"></i> ID Number
+                    </label>
+                    <input type="text" id="username" placeholder="Enter your ID" required>
+                    <small class="format-hint" id="formatHint"></small>
+                </div>
+
+                <div class="form-group">
+                    <label for="password">
+                        <i class="fas fa-lock"></i> Password
+                    </label>
+                    <input type="password" id="password" placeholder="Enter your password" required>
+                </div>
+
+                <button type="submit" class="login-btn">
+                    <i class="fas fa-sign-in-alt"></i> Login
+                </button>
+            </form>
+
+            <div class="demo-credentials">
+                <h4>Demo Credentials:</h4>
+                <p><strong>ugr/1200/18</strong> - Student (Pass: student123)</p>
+                <p><strong>proctor101</strong> - Proctor (Pass: proctor123)</p>
+                <p><strong>staff301</strong> - Staff (Pass: staff123)</p>
+                <p><strong>security201</strong> - Security (Pass: security123)</p>
+                <small>Student Format: ugr/xxxx/15-18 (xxxx=4-digit number)</small>
+            </div>
+        </div>
+
+        <div class="login-footer">
+            <p>DHMS v2.0 © 2025 Addis Ababa University</p>
+        </div>
+    </div>
+
+    <script src="js/common.js"></script>
+    <script src="js/login.js"></script>
+</body>
+</html>

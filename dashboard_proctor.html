@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Proctor Dashboard - DHMS</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body>
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <i class="fas fa-user-shield"></i>
+                <h2>Proctor</h2>
+            </div>
+            <div class="user-info">
+                <img id="sidebarAvatar" src="https://ui-avatars.com/api/?name=Proctor&background=DC3545&color=fff"
+                    alt="User">
+                <div>
+                    <h4 id="sidebarName">Loading...</h4>
+                    <small id="sidebarRole">Role</small>
+                </div>
+            </div>
+        </div>
+
+        <nav class="sidebar-nav">
+            <ul>
+                <li><a href="#" onclick="showSection('dashboard')" class="active"><i class="fas fa-home"></i>
+                        Dashboard</a></li>
+                <li><a href="#" onclick="showSection('assign')"><i class="fas fa-bed"></i> Assign Room</a></li>
+                <li><a href="#" onclick="showSection('maintenance')"><i class="fas fa-wrench"></i> Maintenance</a></li>
+                <li><a href="#" onclick="showSection('laundry')"><i class="fas fa-tshirt"></i> Laundry Approval</a></li>
+                <li><a href="#" onclick="showSection('penalty')"><i class="fas fa-gavel"></i> Assign Penalty</a></li>
+                <li><a href="#" onclick="showSection('students')"><i class="fas fa-users"></i> Students</a></li>
+            </ul>
+        </nav>
+
+        <div class="sidebar-footer">
+            <button onclick="logout()" class="btn-logout">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>Logout</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Top Navigation -->
+        <header class="top-nav">
+            <div class="nav-left">
+                <button class="menu-toggle" id="menuToggle">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <h3>Proctor Dashboard</h3>
+            </div>
+            <div class="nav-right">
+                <span id="currentSection">Dashboard</span>
+            </div>
+        </header>
+
+        <!-- Dashboard Content -->
+        <main class="content">
+            <!-- Dashboard Overview -->
+            <div id="dashboardSection" class="section active-section">
+                <div class="dashboard-card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-chart-line"></i> Dashboard Overview</h3>
+                    </div>
+                    <div class="card-body">
+                        <p class="card-subtitle">Manage all dormitory activities from this centralized dashboard</p>
+                    </div>
+                </div>
+
+                <!-- Stats Cards -->
+                <div class="welcome-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="totalStudents">6</h3>
+                            <p>Assigned Students</p>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-wrench"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="pendingMaintenance">0</h3>
+                            <p>Pending Maintenance</p>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="activePenalties">2</h3>
+                            <p>Active Penalties</p>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-tshirt"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="pendingLaundry">0</h3>
+                            <p>Pending Laundry Forms</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Assign Room -->
+            <div id="assignSection" class="section" style="display: none;">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Assign Room to Student</h3>
+                    </div>
+                    <div class="card-body">
+                        <form id="assignForm">
+                            <div class="form-group">
+                                <label>Student</label>
+                                <select class="form-control" id="assignStudentId" required>
+                                    <option value="">Select student</option>
+                                    <!-- Students will be loaded dynamically -->
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Dormitory</label>
+                                <select class="form-control" id="assignDormitory" required>
+                                    <option value="">Select dormitory</option>
+                                    <!-- Dorms will be loaded dynamically -->
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Room</label>
+                                <select class="form-control" id="assignRoomNumber" required>
+                                    <option value="">Select room</option>
+                                    <!-- Rooms will be loaded dynamically -->
+                                </select>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group half">
+                                    <label>Assignment Date</label>
+                                    <input type="date" class="form-control" id="assignmentDate" required>
+                                </div>
+
+                                <div class="form-group half">
+                                    <label>Expected Check-out (Optional)</label>
+                                    <input type="date" class="form-control" id="expectedCheckOut">
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-check"></i> Assign Room
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Maintenance Requests -->
+            <div id="maintenanceSection" class="section" style="display: none;">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Maintenance Requests Approval</h3>
+                        <div class="job-stats">
+                            <span class="stat-badge pending" id="pendingMaintenanceCount">0 Pending</span>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div id="maintenanceApprovalContainer">
+                            <p>Loading maintenance requests...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Laundry Approval -->
+            <div id="laundrySection" class="section" style="display: none;">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Laundry Forms Approval</h3>
+                        <div class="job-stats">
+                            <span class="stat-badge pending" id="pendingLaundryCount">0 Pending</span>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div id="laundryApprovalContainer">
+                            <p>Loading laundry forms...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Assign Penalty -->
+            <div id="penaltySection" class="section" style="display: none;">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Assign Penalty to Student</h3>
+                    </div>
+                    <div class="card-body">
+                        <form id="penaltyForm">
+                            <div class="form-group">
+                                <label>Student</label>
+                                <select class="form-control" id="penaltyStudentId" required>
+                                    <option value="">Select student</option>
+                                    <!-- Students will be loaded dynamically -->
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Violation Type</label>
+                                <select class="form-control" id="violationType" required
+                                    onchange="updatePenaltyDuration()">
+                                    <option value="">Select violation</option>
+                                    <option value="noise">Noise violation</option>
+                                    <option value="damage">Property damage</option>
+                                    <option value="curfew">Curfew violation</option>
+                                    <option value="smoking">Smoking in room</option>
+                                    <option value="visitor">Unauthorized visitor</option>
+                                    <option value="other">Other</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Description</label>
+                                <textarea class="form-control" id="penaltyDescription"
+                                    placeholder="Describe the violation in detail..." required></textarea>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group half">
+                                    <label>Penalty Duration (Days)</label>
+                                    <input type="number" class="form-control" id="penaltyDuration" min="1" max="30"
+                                        value="3">
+                                    <small class="form-text">Duration is suggested based on violation type</small>
+                                </div>
+
+                                <div class="form-group half">
+                                    <label>Start Date</label>
+                                    <input type="date" class="form-control" id="penaltyStartDate" required>
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group half">
+                                    <label>End Date (Auto-calculated)</label>
+                                    <input type="date" class="form-control" id="penaltyEndDate" readonly>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Consequences</label>
+                                <textarea class="form-control" id="penaltyConsequences"
+                                    placeholder="Describe the consequences of this penalty..."></textarea>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-gavel"></i> Assign Penalty
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Student List -->
+            <div id="studentsSection" class="section" style="display: none;">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Assigned Students</h3>
+                    </div>
+                    <div class="card-body">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Student ID</th>
+                                    <th>Name</th>
+                                    <th>Room</th>
+                                    <th>Status</th>
+                                    <th>Active Penalties</th>
+                                </tr>
+                            </thead>
+                            <tbody id="studentsTableBody">
+                                <!-- Students will be loaded dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer class="footer">
+            <p>&copy; 2024 AAU - Proctor Portal</p>
+        </footer>
+    </div>
+
+    <script src="js/common.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            try {
+                const user = JSON.parse(localStorage.getItem('user')) || {};
+                if (user) {
+                    const nameEl = document.getElementById('sidebarName');
+                    const roleEl = document.getElementById('sidebarRole');
+                    const avatar = document.getElementById('sidebarAvatar');
+                    if (nameEl) nameEl.textContent = user.name || user.username || 'User';
+                    if (roleEl) roleEl.textContent = (user.role || '').toString();
+                    if (avatar) {
+                        if (user.photo) avatar.src = user.photo;
+                        else avatar.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name || user.username || 'User')}&background=DC3545&color=fff`;
+                    }
+                }
+            } catch (e) {
+                // ignore
+            }
+        });
+    </script>
+    <script src="js/proctor.js"></script>
+</body>
+
+</html>
