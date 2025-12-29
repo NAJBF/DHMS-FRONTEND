@@ -15,18 +15,7 @@ document.addEventListener('DOMContentLoaded', async function () {
         proctorNameEl.textContent = user.name || user.full_name || user.username || 'Proctor';
     }
 
-    // Load initial data
-    await loadDashboardData();
-    await loadDorms();
-    await loadAvailableRooms();
-    await loadStudents();
-    await loadPendingMaintenance();
-    await loadPendingLaundry();
-
-    // Initialize date pickers
-    initializeDatePickers();
-
-    // Show section function
+    // Ensure showSection is available globally - DEFINED EARLY
     window.showSection = function (sectionId) {
         // Hide all sections
         document.querySelectorAll('.section').forEach(section => {
@@ -39,11 +28,14 @@ document.addEventListener('DOMContentLoaded', async function () {
         if (targetSection) {
             targetSection.style.display = 'block';
             targetSection.classList.add('active-section');
+        } else {
+            console.error(`Section ${sectionId} not found in HTML.`);
         }
 
         // Update current section text
         const sectionNames = {
             'assign': 'Assign Room',
+            'rooms': 'Available Rooms',
             'maintenance': 'Maintenance Approval',
             'laundry': 'Laundry Approval',
             'penalty': 'Assign Penalty',
@@ -58,10 +50,10 @@ document.addEventListener('DOMContentLoaded', async function () {
         // Update active menu
         document.querySelectorAll('.sidebar-nav a').forEach(link => {
             link.classList.remove('active');
+            if (link.getAttribute('onclick').includes(sectionId)) {
+                link.classList.add('active');
+            }
         });
-        if (event && event.currentTarget) {
-            event.currentTarget.classList.add('active');
-        }
 
         // Refresh data for specific sections
         if (sectionId === 'maintenance') {
@@ -70,6 +62,8 @@ document.addEventListener('DOMContentLoaded', async function () {
             loadPendingLaundry();
         } else if (sectionId === 'students') {
             loadStudents();
+        } else if (sectionId === 'rooms') {
+            loadAllAvailableRooms();
         }
 
         // Close sidebar on mobile
@@ -78,6 +72,14 @@ document.addEventListener('DOMContentLoaded', async function () {
             if (sidebar) sidebar.classList.remove('active');
         }
     };
+
+    // Load initial data
+    await loadDashboardData();
+    await loadDorms();
+    await loadAvailableRooms();
+    await loadStudents();
+    await loadPendingMaintenance();
+    await loadPendingLaundry();
 
     // Initialize date pickers with today's date
     function initializeDatePickers() {
@@ -163,21 +165,85 @@ document.addEventListener('DOMContentLoaded', async function () {
         }
     }
 
-    // Load available rooms
+    // Load available rooms (internal for dropdowns)
     async function loadAvailableRooms() {
         try {
             const data = await apiRequest('/rooms/available/');
-            // Response structure: { rooms: [...] }
-            const roomList = data.rooms || data || [];
+            // Response structure: { success: true, data: { rooms: [...] } }
+            // The user provided structure shows the response is nested in data.rooms
+            const roomList = data.data ? (data.data.rooms || []) : (data.rooms || data || []);
 
             if (Array.isArray(roomList)) {
                 availableRooms = roomList;
-                updateRoomDropdown();
+                // Only update dropdown if we are assigning
+                // updateRoomDropdown(); // This is largely handled by dorm selection now
             }
         } catch (error) {
             console.log('Available rooms load failed:', error);
         }
     }
+
+
+    // Load all available rooms for the list view
+    window.loadAllAvailableRooms = async function () {
+        const tableBody = document.getElementById('availableRoomsTableBody');
+        if (!tableBody) {
+            console.error('Available rooms table body not found');
+            return;
+        }
+
+        tableBody.innerHTML = '<tr><td colspan="7" class="text-center"><i class="fas fa-spinner fa-spin"></i> Loading data...</td></tr>';
+
+        try {
+            const response = await apiRequest('/rooms/available/');
+            console.log('Available rooms API response:', response);
+
+            // Handle various response structures
+            // Expected: { rooms: [...] } (after unwrap) or { data: { rooms: [...] } }
+            let roomList = [];
+
+            if (Array.isArray(response)) {
+                roomList = response;
+            } else if (response.rooms) {
+                roomList = response.rooms;
+            } else if (response.data && response.data.rooms) {
+                roomList = response.data.rooms;
+            } else if (response.data && Array.isArray(response.data)) {
+                roomList = response.data;
+            }
+
+            console.log('Parsed room list:', roomList);
+
+            if (!roomList || roomList.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="7" class="text-center">No available rooms found (Empty list).</td></tr>';
+                return;
+            }
+
+            let html = '';
+            roomList.forEach(room => {
+                const badgeClass = (room.status || '').toLowerCase() === 'available' ? 'badge-success' : 'badge-secondary';
+                const dormName = room.dorm_name || room.dorm_code || ('Dorm ' + room.dorm);
+
+                html += `
+                    <tr>
+                        <td><strong>${room.room_number}</strong></td>
+                        <td>${dormName}</td>
+                        <td>${room.floor}</td>
+                        <td>${room.room_type || 'Standard'}</td>
+                        <td>${room.capacity}</td>
+                        <td>${room.current_occupancy}/${room.capacity}</td>
+                        <td><span class="badge ${badgeClass}">${room.status || 'Unknown'}</span></td>
+                    </tr>
+                `;
+            });
+
+            tableBody.innerHTML = html;
+
+        } catch (error) {
+            console.error('Failed to load available rooms:', error);
+            tableBody.innerHTML = `<tr><td colspan="7" class="text-center text-danger">Error loading rooms: ${error.message}</td></tr>`;
+        }
+    };
 
     // Update room dropdown based on selected dorm
     // Update room dropdown based on selected dorm
@@ -194,12 +260,12 @@ document.addEventListener('DOMContentLoaded', async function () {
         }
 
         try {
-             // Fetch rooms for the specific dorm from API
+            // Fetch rooms for the specific dorm from API
             const data = await apiRequest(`/dorms/${dormId}/rooms/`);
             const roomList = data.rooms || data || [];
 
             roomSelect.innerHTML = '<option value="">Select room</option>';
-            
+
             if (Array.isArray(roomList)) {
                 roomList.forEach(room => {
                     const option = document.createElement('option');
@@ -210,7 +276,7 @@ document.addEventListener('DOMContentLoaded', async function () {
                 });
                 roomSelect.disabled = false;
             } else {
-                 roomSelect.innerHTML = '<option value="">No rooms found</option>';
+                roomSelect.innerHTML = '<option value="">No rooms found</option>';
             }
 
         } catch (error) {
@@ -269,14 +335,23 @@ document.addEventListener('DOMContentLoaded', async function () {
                         const roomNumber = student.room_number || 'Not assigned';
                         const status = student.status || 'active';
 
+                        // Penalty info
+                        const penaltyCount = student.active_penalties_count || student.penalties_count || 0;
+                        const penaltyBadge = penaltyCount > 0
+                            ? `<span class="badge badge-danger">${penaltyCount} Active Penalties</span>`
+                            : '<span class="badge badge-success">No Penalties</span>';
+
                         row.innerHTML = `
                             <td>${studentCode}</td>
-                            <td>${name}</td>
+                            <td>
+                                ${name}<br>
+                                <small>${penaltyBadge}</small>
+                            </td>
                             <td>${roomNumber}</td>
                             <td><span class="badge badge-${status === 'active' ? 'success' : 'secondary'}">${status}</span></td>
                             <td>
                                 <button class="btn btn-sm btn-info" onclick="viewStudent(${student.id})">
-                                    <i class="fas fa-eye"></i>
+                                    <i class="fas fa-eye"></i> View
                                 </button>
                             </td>
                         `;
@@ -293,7 +368,20 @@ document.addEventListener('DOMContentLoaded', async function () {
     window.viewStudent = function (studentId) {
         const student = students.find(s => s.id === studentId);
         if (student) {
-            alert(`Student: ${student.full_name}\nCode: ${student.student_code}\nRoom: ${student.room_number || 'Not assigned'}\nStatus: ${student.status}`);
+            let details = `Student: ${student.full_name}\nCode: ${student.student_code}\nRoom: ${student.room_number || 'Not assigned'}\nStatus: ${student.status}`;
+
+            if (student.active_penalties_count > 0 && student.penalties && student.penalties.length > 0) {
+                details += '\n\nActive Penalties:';
+                student.penalties.forEach(p => {
+                    if (p.status === 'active') {
+                        details += `\n- ${p.violation_type}: ${p.description} (Ends: ${p.end_date})`;
+                    }
+                });
+            } else if (student.active_penalties_count > 0) {
+                details += `\n\nActive Penalties: ${student.active_penalties_count} (Details not loaded)`;
+            }
+
+            alert(details);
         }
     };
 
@@ -597,10 +685,10 @@ document.addEventListener('DOMContentLoaded', async function () {
                 showAlert('Room assigned successfully!', 'success');
                 assignForm.reset();
                 initializeDatePickers();
-                
+
                 // Clear room dropdown
                 const roomSelect = document.getElementById('assignRoomNumber');
-                if(roomSelect) {
+                if (roomSelect) {
                     roomSelect.innerHTML = '<option value="">Select dormitory first</option>';
                     roomSelect.disabled = true;
                 }
