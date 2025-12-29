@@ -10,6 +10,99 @@ document.addEventListener('DOMContentLoaded', async function () {
         securityNameEl.textContent = user.name || user.full_name || user.username || 'Security';
     }
 
+    // Verify laundry form
+    window.verifyLaundryForm = async function (formId, formCode) {
+        const notes = prompt('Enter verification notes (optional):') || 'Verified by security';
+
+        try {
+            await apiRequest(`/security/laundry/${formId}/verify/`, {
+                method: 'PUT',
+                body: JSON.stringify({ verification_notes: notes })
+            });
+
+            showAlert(`Form ${formCode} verified successfully!`, 'success');
+
+            // Remove card from list
+            const card = document.getElementById(`form-${formId}`);
+            if (card) {
+                card.style.animation = 'fadeOut 0.3s ease';
+                setTimeout(() => card.remove(), 300);
+            }
+
+            // Refresh data
+            await loadDashboardData();
+
+        } catch (error) {
+            console.error('Verify error:', error);
+            showAlert('Failed to verify form', 'error');
+        }
+    };
+
+    // Mark laundry as taken out
+    window.markLaundryTakenOut = async function (formId, formCode, isAuto = false) {
+        if (!isAuto && !confirm(`Confirm that student is taking out laundry ${formCode}?`)) return;
+
+        try {
+            await apiRequest(`/security/laundry/${formId}/taken/`, {
+                method: 'PUT'
+            });
+
+            showAlert(`Form ${formCode} marked as taken out!`, 'success');
+
+            // Show success in scanner if applicable
+            const resultDiv = document.getElementById('scanResult');
+            if (resultDiv && isAuto) {
+                resultDiv.innerHTML = `
+                    <div class="scan-result-card success">
+                        <h4><i class="fas fa-check-circle"></i> Success!</h4>
+                        <p><strong>Form:</strong> ${formCode}</p>
+                        <p>Marked as Taken Out</p>
+                    </div>
+                `;
+            }
+
+            // Remove card from list
+            const card = document.getElementById(`form-${formId}`);
+            if (card) {
+                card.style.animation = 'fadeOut 0.3s ease';
+                setTimeout(() => card.remove(), 300);
+            }
+
+            // Refresh data
+            await loadDashboardData();
+
+        } catch (error) {
+            console.error('Taken out error:', error);
+            showAlert('Failed to mark as taken out: ' + error.message, 'error');
+
+            const resultDiv = document.getElementById('scanResult');
+            if (resultDiv && isAuto) {
+                resultDiv.innerHTML = `
+                    <div class="scan-result-card error">
+                        <h4><i class="fas fa-times-circle"></i> Error</h4>
+                        <p>${error.message || 'Failed to process'}</p>
+                    </div>
+                `;
+            }
+        }
+    };
+
+    // Manual QR code entry
+    window.scanQRCode = function () {
+        const input = document.getElementById('scanInput');
+        if (!input) return;
+
+        const qrCode = input.value.trim();
+        if (!qrCode) {
+            showAlert('Please enter a form code', 'warning');
+            return;
+        }
+
+        processQRCode(qrCode); // Assuming processQRCode is hoisted or defined before utilization? 
+        // processQRCode is defined inside but we call it here. 
+        // We need to hoist processQRCode too if it's called by this.
+    };
+
     // Load initial data
     await loadDashboardData();
     await loadPendingLaundry();
@@ -169,9 +262,6 @@ document.addEventListener('DOMContentLoaded', async function () {
                 </div>
             </div>
             <div class="verification-actions">
-                <button class="btn btn-success" onclick="verifyLaundryForm(${form.id}, '${formCode}')">
-                    <i class="fas fa-check"></i> Verify
-                </button>
                 <button class="btn btn-primary" onclick="markLaundryTakenOut(${form.id}, '${formCode}')">
                     <i class="fas fa-sign-out-alt"></i> Mark Taken Out
                 </button>
@@ -182,81 +272,10 @@ document.addEventListener('DOMContentLoaded', async function () {
     }
 
     // Verify laundry form
-    window.verifyLaundryForm = async function (formId, formCode) {
-        const notes = prompt('Enter verification notes (optional):') || 'Verified by security';
-
-        try {
-            await apiRequest(`/security/laundry/${formId}/verify/`, {
-                method: 'PUT',
-                body: JSON.stringify({ verification_notes: notes })
-            });
-
-            showAlert(`Form ${formCode} verified successfully!`, 'success');
-
-            // Remove card from list
-            const card = document.getElementById(`form-${formId}`);
-            if (card) {
-                card.style.animation = 'fadeOut 0.3s ease';
-                setTimeout(() => card.remove(), 300);
-            }
-
-            // Refresh data
-            await loadDashboardData();
-
-        } catch (error) {
-            console.error('Verify error:', error);
-            showAlert('Failed to verify form', 'error');
-        }
-    };
+    // Verify laundry form logic moved to top
 
     // Mark laundry as taken out
-    window.markLaundryTakenOut = async function (formId, formCode, isAuto = false) {
-        if (!isAuto && !confirm(`Confirm that student is taking out laundry ${formCode}?`)) return;
-
-        try {
-            await apiRequest(`/security/laundry/${formId}/taken/`, {
-                method: 'PUT'
-            });
-
-            showAlert(`Form ${formCode} marked as taken out!`, 'success');
-
-            // Show success in scanner if applicable
-            const resultDiv = document.getElementById('scanResult');
-            if (resultDiv && isAuto) {
-                resultDiv.innerHTML = `
-                    <div class="scan-result-card success">
-                        <h4><i class="fas fa-check-circle"></i> Success!</h4>
-                        <p><strong>Form:</strong> ${formCode}</p>
-                        <p>Marked as Taken Out</p>
-                    </div>
-                `;
-            }
-
-            // Remove card from list
-            const card = document.getElementById(`form-${formId}`);
-            if (card) {
-                card.style.animation = 'fadeOut 0.3s ease';
-                setTimeout(() => card.remove(), 300);
-            }
-
-            // Refresh data
-            await loadDashboardData();
-
-        } catch (error) {
-            console.error('Taken out error:', error);
-            showAlert('Failed to mark as taken out: ' + error.message, 'error');
-
-            const resultDiv = document.getElementById('scanResult');
-            if (resultDiv && isAuto) {
-                resultDiv.innerHTML = `
-                    <div class="scan-result-card error">
-                        <h4><i class="fas fa-times-circle"></i> Error</h4>
-                        <p>${error.message || 'Failed to process'}</p>
-                    </div>
-                `;
-            }
-        }
-    };
+    // Mark Laundry logic moved to top
 
     // QR Scanner functionality
     let videoStream = null;
@@ -481,18 +500,7 @@ document.addEventListener('DOMContentLoaded', async function () {
     // Replaced with direct calls in processQRCode
 
     // Manual QR code entry
-    window.scanQRCode = function () {
-        const input = document.getElementById('scanInput');
-        if (!input) return;
-
-        const qrCode = input.value.trim();
-        if (!qrCode) {
-            showAlert('Please enter a form code', 'warning');
-            return;
-        }
-
-        processScannedCode(qrCode);
-    };
+    // Manual QR logic moved to top
 
     // Initialize scanner section if visible
     initQRScanner();
