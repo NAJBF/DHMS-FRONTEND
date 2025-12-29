@@ -4,6 +4,53 @@ document.addEventListener('DOMContentLoaded', async function () {
     const user = initDashboard();
     if (!user) return;
 
+    // Define Actions Globally FIRST
+    // Accept Job
+    window.acceptJob = async function (jobId) {
+        if (!confirm('Are you sure you want to accept this job?')) return;
+
+        try {
+            await apiRequest(`/staff/maintenance/${jobId}/accept/`, { method: 'PUT' });
+            showAlert('Job accepted successfully!', 'success');
+            loadMaintenanceJobs();
+            loadDashboardData();
+        } catch (error) {
+            console.error('Accept job error:', error);
+            showAlert('Failed to accept job.', 'error');
+        }
+    };
+
+    // Start Job
+    window.startJob = async function (jobId) {
+        try {
+            await apiRequest(`/staff/maintenance/${jobId}/start/`, { method: 'PUT' });
+            showAlert('Work started!', 'success');
+            loadMaintenanceJobs();
+            loadDashboardData();
+        } catch (error) {
+            console.error('Start job error:', error);
+            showAlert('Failed to start job.', 'error');
+        }
+    };
+
+    // Complete Job
+    window.completeJob = async function (jobId) {
+        const notes = prompt('Enter completion notes (optional):');
+
+        try {
+            await apiRequest(`/staff/maintenance/${jobId}/complete/`, {
+                method: 'PUT',
+                body: JSON.stringify({ notes: notes || '' })
+            });
+            showAlert('Job marked as completed!', 'success');
+            loadMaintenanceJobs();
+            loadDashboardData();
+        } catch (error) {
+            console.error('Complete job error:', error);
+            showAlert('Failed to complete job.', 'error');
+        }
+    };
+
     // Load initial data
     await loadDashboardData();
     await loadMaintenanceJobs();
@@ -76,8 +123,10 @@ document.addEventListener('DOMContentLoaded', async function () {
                 } else {
                     // Sort: In Progress > Assigned > Completed
                     myJobs.sort((a, b) => {
+                        const statusA = (a.status || '').toLowerCase();
+                        const statusB = (b.status || '').toLowerCase();
                         const order = { 'in_progress': 1, 'assigned': 2, 'completed': 3 };
-                        return (order[a.status] || 99) - (order[b.status] || 99);
+                        return (order[statusA] || 99) - (order[statusB] || 99);
                     });
 
                     myJobs.forEach(job => {
@@ -132,7 +181,9 @@ document.addEventListener('DOMContentLoaded', async function () {
         const roomNumber = job.room_number || job.room || 'N/A';
         const issueType = job.issue_type || job.title || 'Issue';
         const urgency = job.urgency || 'low';
-        const status = job.status || 'assigned';
+
+        // Normalize status
+        let status = (job.status || 'assigned').toLowerCase();
 
         // Urgency badge
         const urgencyClass = urgency === 'high' ? 'badge-danger' :
@@ -142,21 +193,22 @@ document.addEventListener('DOMContentLoaded', async function () {
         let statusBadge = '';
         let actionButton = '';
 
-        if (status === 'assigned') {
+        // Flexible status matching
+        if (status.includes('assign') || status === 'pending_staff') {
             statusBadge = '<span class="badge badge-info">Assigned</span>';
             actionButton = `
                 <button class="btn btn-sm btn-success" onclick="startJob(${jobId})">
                     <i class="fas fa-play"></i> Start
                 </button>
             `;
-        } else if (status === 'in_progress') {
+        } else if (status.includes('progress') || status.includes('start')) {
             statusBadge = '<span class="badge badge-primary">In Progress</span>';
             actionButton = `
                 <button class="btn btn-sm btn-success" onclick="completeJob(${jobId})">
                     <i class="fas fa-check"></i> Complete
                 </button>
             `;
-        } else if (status === 'completed') {
+        } else if (status.includes('complete') || status.includes('done')) {
             statusBadge = '<span class="badge badge-success">Completed</span>';
             actionButton = '<span class="text-muted"><i class="fas fa-check-circle"></i> Done</span>';
         } else {
@@ -184,48 +236,14 @@ document.addEventListener('DOMContentLoaded', async function () {
 
 
     // Accept Job
-    window.acceptJob = async function (jobId) {
-        if (!confirm('Are you sure you want to accept this job?')) return;
+    // ACCEPT JOB logic moved to top
 
-        try {
-            await apiRequest(`/staff/maintenance/${jobId}/accept/`, { method: 'PUT' });
-            showAlert('Job accepted successfully!', 'success');
-            loadMaintenanceJobs();
-            loadDashboardData();
-        } catch (error) {
-            console.error('Accept job error:', error);
-            showAlert('Failed to accept job.', 'error');
-        }
-    };
 
     // Start Job
-    window.startJob = async function (jobId) {
-        try {
-            await apiRequest(`/staff/maintenance/${jobId}/start/`, { method: 'PUT' });
-            showAlert('Work started!', 'success');
-            loadMaintenanceJobs();
-            loadDashboardData();
-        } catch (error) {
-            console.error('Start job error:', error);
-            showAlert('Failed to start job.', 'error');
-        }
-    };
+    // START JOB logic moved to top
+
 
     // Complete Job
-    window.completeJob = async function (jobId) {
-        const notes = prompt('Enter completion notes (optional):');
+    // COMPLETE JOB logic moved to top
 
-        try {
-            await apiRequest(`/staff/maintenance/${jobId}/complete/`, {
-                method: 'PUT',
-                body: JSON.stringify({ notes: notes || '' })
-            });
-            showAlert('Job marked as completed!', 'success');
-            loadMaintenanceJobs();
-            loadDashboardData();
-        } catch (error) {
-            console.error('Complete job error:', error);
-            showAlert('Failed to complete job.', 'error');
-        }
-    };
 });
