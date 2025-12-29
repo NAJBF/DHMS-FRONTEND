@@ -32,6 +32,7 @@
                 <li><a href="#" onclick="showSection('dashboard')" class="active"><i class="fas fa-home"></i>
                         Dashboard</a></li>
                 <li><a href="#" onclick="showSection('assign')"><i class="fas fa-bed"></i> Assign Room</a></li>
+                <li><a href="#" onclick="showSection('rooms')"><i class="fas fa-door-open"></i> Available Rooms</a></li>
                 <li><a href="#" onclick="showSection('maintenance')"><i class="fas fa-wrench"></i> Maintenance</a></li>
                 <li><a href="#" onclick="showSection('laundry')"><i class="fas fa-tshirt"></i> Laundry Approval</a></li>
                 <li><a href="#" onclick="showSection('penalty')"><i class="fas fa-gavel"></i> Assign Penalty</a></li>
@@ -167,6 +168,40 @@
                                 <i class="fas fa-check"></i> Assign Room
                             </button>
                         </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Available Rooms -->
+            <div id="roomsSection" class="section" style="display: none;">
+                <div class="card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-door-open"></i> Available Rooms</h3>
+                        <button class="btn btn-sm btn-primary" onclick="loadAllAvailableRooms()">
+                            <i class="fas fa-sync"></i> Refresh
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Room</th>
+                                        <th>Dorm</th>
+                                        <th>Floor</th>
+                                        <th>Type</th>
+                                        <th>Capacity</th>
+                                        <th>Occupancy</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="availableRoomsTableBody">
+                                    <tr>
+                                        <td colspan="7" class="text-center">Click Refresh to load data...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
