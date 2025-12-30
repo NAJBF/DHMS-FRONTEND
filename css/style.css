@@ -176,34 +176,6 @@ body {
     background: #1a365d;
 }
 
-.demo-credentials {
-    margin-top: 25px;
-    padding: 20px;
-    background: #f8f9fa;
-    border-radius: 8px;
-    border-left: 4px solid #2c5282;
-}
-
-.demo-credentials h4 {
-    margin-bottom: 15px;
-    color: #2d3748;
-    font-size: 1rem;
-}
-
-.demo-credentials p {
-    margin-bottom: 8px;
-    font-size: 0.9rem;
-    color: #4a5568;
-}
-
-.demo-credentials small {
-    display: block;
-    margin-top: 10px;
-    font-size: 0.8rem;
-    color: #718096;
-    line-height: 1.4;
-}
-
 .login-footer {
     padding: 20px;
     text-align: center;
@@ -798,7 +770,7 @@ textarea.form-control {
 }
 
 .dashboard-card .card-header {
-    background: linear-gradient(135deg, #2c5282 0%, #1a365d 100%);
+    background-color: white;
     color: white;
     padding: 20px;
 }
@@ -808,6 +780,7 @@ textarea.form-control {
     align-items: center;
     gap: 10px;
     font-size: 1.3rem;
+    color: #2c5282;
 }
 
 .dashboard-card .card-body {
@@ -1723,4 +1696,43 @@ textarea.form-control {
 
 .qr-preview-actions .btn i {
     font-size: 1rem;
+}
+/* CSS Grid for laundry cards - NO JavaScript changes needed */
+#laundryVerificationList {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 15px;
+    margin-top: 20px;
+}
+
+/* Style the existing verification cards to look better in grid */
+.verification-card {
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 15px;
+    background: white;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    margin: 0; /* Remove any default margins */
+}
+
+/* Make sure the cards don't overflow */
+.verification-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.verification-body {
+    margin-bottom: 15px;
+}
+
+.verification-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.verification-actions .btn {
+    flex: 1;
+    padding: 8px 12px;
 }
