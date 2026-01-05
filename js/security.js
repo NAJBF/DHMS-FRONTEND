@@ -1,8 +1,13 @@
 // Security dashboard functionality - DHMS Frontend
 document.addEventListener('DOMContentLoaded', async function () {
+    console.log('Security dashboard loading...');
+    
     // Initialize dashboard
     const user = initDashboard();
-    if (!user) return;
+    if (!user) {
+        console.error('Dashboard init failed');
+        return;
+    }
 
     // Update security name in sidebar
     const securityNameEl = document.getElementById('securityName');
@@ -15,6 +20,7 @@ document.addEventListener('DOMContentLoaded', async function () {
         const notes = prompt('Enter verification notes (optional):') || 'Verified by security';
 
         try {
+            // Try security endpoint
             await apiRequest(`/security/laundry/${formId}/verify/`, {
                 method: 'PUT',
                 body: JSON.stringify({ verification_notes: notes })
@@ -34,31 +40,106 @@ document.addEventListener('DOMContentLoaded', async function () {
 
         } catch (error) {
             console.error('Verify error:', error);
-            showAlert('Failed to verify form', 'error');
+            
+            // If verify endpoint doesn't exist, try a different approach
+            if (error.message.includes('404')) {
+                console.log('Verify endpoint not found, showing demo message');
+                showAlert(`⚠️ Verification endpoint not implemented. Would verify: "${notes}"`, 'warning');
+                
+                // Remove from UI for demo purposes
+                const card = document.getElementById(`form-${formId}`);
+                if (card) {
+                    card.style.animation = 'fadeOut 0.3s ease';
+                    setTimeout(() => card.remove(), 300);
+                }
+            } else {
+                showAlert('Failed to verify form', 'error');
+            }
         }
     };
 
-    // Mark laundry as taken out
+    // Mark laundry as taken out - DEBUG VERSION
     window.markLaundryTakenOut = async function (formId, formCode, isAuto = false) {
+        console.log('=== MARK TAKEN OUT DEBUG START ===');
+        console.log('Form ID:', formId);
+        console.log('Form Code:', formCode);
+        console.log('Is Auto:', isAuto);
+        
         if (!isAuto && !confirm(`Confirm that student is taking out laundry ${formCode}?`)) return;
 
         try {
-            await apiRequest(`/security/laundry/${formId}/taken/`, {
-                method: 'PUT'
-            });
-
-            showAlert(`Form ${formCode} marked as taken out!`, 'success');
-
-            // Show success in scanner if applicable
-            const resultDiv = document.getElementById('scanResult');
-            if (resultDiv && isAuto) {
-                resultDiv.innerHTML = `
-                    <div class="scan-result-card success">
-                        <h4><i class="fas fa-check-circle"></i> Success!</h4>
-                        <p><strong>Form:</strong> ${formCode}</p>
-                        <p>Marked as Taken Out</p>
-                    </div>
-                `;
+            // First try: Use full URL with GET (same as QR scanner)
+            const fullUrl = `${window.API_BASE_URL}/public/laundry/${formCode}/taken/`;
+            console.log('Trying full URL with GET:', fullUrl);
+            
+            let success = false;
+            let lastError = null;
+            
+            // Try different approaches
+            const attempts = [
+                {
+                    name: 'Full URL GET',
+                    fn: async () => {
+                        const response = await fetch(fullUrl, {
+                            method: 'GET',
+                            headers: {
+                                'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                                'Content-Type': 'application/json'
+                            }
+                        });
+                        if (!response.ok) {
+                            throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+                        }
+                        return response.json();
+                    }
+                },
+                {
+                    name: 'API path GET',
+                    fn: async () => {
+                        return await apiRequest(`/public/laundry/${formCode}/taken/`, {
+                            method: 'GET'
+                        });
+                    }
+                },
+                {
+                    name: 'API path PUT',
+                    fn: async () => {
+                        return await apiRequest(`/public/laundry/${formCode}/taken/`, {
+                            method: 'PUT'
+                        });
+                    }
+                },
+                {
+                    name: 'API path POST',
+                    fn: async () => {
+                        return await apiRequest(`/public/laundry/${formCode}/taken/`, {
+                            method: 'POST'
+                        });
+                    }
+                }
+            ];
+            
+            for (const attempt of attempts) {
+                try {
+                    console.log(`\nAttempting: ${attempt.name}...`);
+                    const result = await attempt.fn();
+                    console.log(`${attempt.name} Success! Result:`, result);
+                    
+                    showAlert(`✅ Form ${formCode} marked as taken out! (${attempt.name})`, 'success');
+                    success = true;
+                    break;
+                    
+                } catch (attemptError) {
+                    lastError = attemptError;
+                    console.log(`${attempt.name} failed:`, attemptError.message);
+                    continue;
+                }
+            }
+            
+            if (!success) {
+                showAlert(`❌ Could not mark as taken. All methods failed.`, 'error');
+                console.log('All attempts failed. Last error:', lastError);
+                return;
             }
 
             // Remove card from list
@@ -70,45 +151,29 @@ document.addEventListener('DOMContentLoaded', async function () {
 
             // Refresh data
             await loadDashboardData();
+            await loadPendingLaundry();
 
         } catch (error) {
-            console.error('Taken out error:', error);
-            showAlert('Failed to mark as taken out: ' + error.message, 'error');
-
-            const resultDiv = document.getElementById('scanResult');
-            if (resultDiv && isAuto) {
-                resultDiv.innerHTML = `
-                    <div class="scan-result-card error">
-                        <h4><i class="fas fa-times-circle"></i> Error</h4>
-                        <p>${error.message || 'Failed to process'}</p>
-                    </div>
-                `;
-            }
+            console.error('=== FINAL ERROR ===');
+            console.error('Error:', error);
+            console.error('Error message:', error.message);
+            console.error('=== END ERROR ===');
+            
+            showAlert(`❌ Error: ${error.message}`, 'error');
         }
-    };
-
-    // Manual QR code entry
-    window.scanQRCode = function () {
-        const input = document.getElementById('scanInput');
-        if (!input) return;
-
-        const qrCode = input.value.trim();
-        if (!qrCode) {
-            showAlert('Please enter a form code', 'warning');
-            return;
-        }
-
-        processQRCode(qrCode); // Assuming processQRCode is hoisted or defined before utilization? 
-        // processQRCode is defined inside but we call it here. 
-        // We need to hoist processQRCode too if it's called by this.
+        
+        console.log('=== MARK TAKEN OUT DEBUG END ===');
     };
 
     // Load initial data
     await loadDashboardData();
     await loadPendingLaundry();
 
-    // Show section function
+    // Show section function - FIXED
     window.showSection = function (sectionId) {
+        // Get event from arguments or window.event for older browsers
+        const event = arguments[1] || window.event;
+        
         // Hide all sections
         document.querySelectorAll('.section').forEach(section => {
             section.style.display = 'none';
@@ -168,23 +233,19 @@ document.addEventListener('DOMContentLoaded', async function () {
                     if (securityNameEl) {
                         securityNameEl.textContent = data.security.full_name || user.name || 'Security';
                     }
-
-                    // Update shift and post info
-                    const shiftEl = document.getElementById('securityShift');
-                    const postEl = document.getElementById('securityPost');
-                    if (shiftEl) shiftEl.textContent = (data.security.shift || 'day').charAt(0).toUpperCase() + (data.security.shift || 'day').slice(1) + ' Shift';
-                    if (postEl) postEl.textContent = data.security.assigned_post || 'Main Gate';
                 }
 
                 // Update stats
                 if (data.stats) {
-                    const pendingEl = document.getElementById('pendingVerification');
-                    const verifiedEl = document.getElementById('verifiedToday');
-                    const takenOutEl = document.getElementById('takenOutToday');
+                    const inCampusEl = document.getElementById('studentsInCampus');
+                    const outCampusEl = document.getElementById('studentsOutCampus');
+                    const pendingLaundryEl = document.getElementById('pendingLaundry');
+                    const scannedTodayEl = document.getElementById('scannedToday');
 
-                    if (pendingEl) pendingEl.textContent = data.stats.pending_verification || 0;
-                    if (verifiedEl) verifiedEl.textContent = data.stats.verified_today || 0;
-                    if (takenOutEl) takenOutEl.textContent = data.stats.taken_out_today || 0;
+                    if (inCampusEl) inCampusEl.textContent = data.stats.students_in_campus || data.stats.in_campus || 0;
+                    if (outCampusEl) outCampusEl.textContent = data.stats.students_out_campus || data.stats.out_campus || 0;
+                    if (pendingLaundryEl) pendingLaundryEl.textContent = data.stats.pending_laundry || data.stats.pending_verification || 0;
+                    if (scannedTodayEl) scannedTodayEl.textContent = data.stats.scanned_today || data.stats.taken_out_today || 0;
                 }
             }
         } catch (error) {
@@ -271,18 +332,11 @@ document.addEventListener('DOMContentLoaded', async function () {
         return card;
     }
 
-    // Verify laundry form
-    // Verify laundry form logic moved to top
-
-    // Mark laundry as taken out
-    // Mark Laundry logic moved to top
-
     // QR Scanner functionality
     let videoStream = null;
     let scanInterval = null;
 
     function initQRScanner() {
-        const video = document.getElementById('qrVideo');
         const startBtn = document.getElementById('startScanner');
         const stopBtn = document.getElementById('stopScanner');
 
@@ -376,8 +430,6 @@ document.addEventListener('DOMContentLoaded', async function () {
     }
 
     // Process scanned QR code
-    // Process scanned QR code
-    // Process scanned QR code
     async function processQRCode(qrData) {
         const resultDiv = document.getElementById('scanResult');
         console.log('Processing QR code:', qrData);
@@ -395,30 +447,19 @@ document.addEventListener('DOMContentLoaded', async function () {
         let cleanData = qrData.trim();
 
         // Check if it matches the API base URL structure to extract relative path
-        // API_BASE_URL is typically https://dhms-b8w3.onrender.com/aau-dhms-api
-        // We want to extract /public/laundry/LAU-2025-7AE938/taken/
-
         let apiPath = null;
-        let formCode = 'UNKNOWN'; // For display
+        let formCode = 'UNKNOWN';
 
         try {
-            // Simple heuristic: valid URL containing /aau-dhms-api/
             if (cleanData.includes('/aau-dhms-api/')) {
                 const parts = cleanData.split('/aau-dhms-api/');
                 if (parts.length > 1) {
-                    apiPath = '/' + parts[1]; // e.g. /public/laundry/LAU-xxx/taken/
+                    apiPath = '/' + parts[1];
                 }
             } else if (cleanData.startsWith('http') && cleanData.includes('/laundry/')) {
-                // Try to guess if base URL is missing or different
                 const urlObj = new URL(cleanData);
-                // Assuming the path part is what we want if it starts with /public or /security
                 apiPath = urlObj.pathname;
 
-                // If pathname includes /aau-dhms-api/, strip it because apiRequest adds it back?
-                // Wait, apiRequest helper PREPENDS API_BASE_URL.
-                // If strip /aau-dhms-api/, we get /public/...
-                // apiRequest will make it https://.../aau-dhms-api/public/...
-                // This matches perfectly.
                 if (apiPath.startsWith('/aau-dhms-api/')) {
                     apiPath = apiPath.replace('/aau-dhms-api/', '/');
                 }
@@ -429,9 +470,8 @@ document.addEventListener('DOMContentLoaded', async function () {
                 const parts = cleanData.split('/');
                 const takenIndex = parts.indexOf('taken');
                 if (takenIndex > 0) {
-                    formCode = parts[takenIndex - 1]; // Item before 'taken'
+                    formCode = parts[takenIndex - 1];
                 } else {
-                    // try last part
                     formCode = parts[parts.length - 1] || parts[parts.length - 2];
                 }
             }
@@ -444,7 +484,6 @@ document.addEventListener('DOMContentLoaded', async function () {
             // Direct API call to the scanned URL path
             console.log('Making direct API call to:', apiPath);
             try {
-                // Remove double slashes if any
                 apiPath = apiPath.replace('//', '/');
 
                 await apiRequest(apiPath, {
@@ -480,10 +519,6 @@ document.addEventListener('DOMContentLoaded', async function () {
             }
 
         } else {
-            // Fallback to old logic (local ID lookup) only if NOT a URL or URL parse failed
-            // ... [Existing fallback logic if needed, but user seems focused on URL support]
-            // For now, let's just error if it's not the URL format expected.
-
             showAlert(`Note: Use the specific "Taken Out" QR code.`, 'warning');
             if (resultDiv) {
                 resultDiv.innerHTML = `
@@ -496,12 +531,37 @@ document.addEventListener('DOMContentLoaded', async function () {
         }
     }
 
-    // Process scanned code via API - Removed as backend scan endpoint doesn't exist
-    // Replaced with direct calls in processQRCode
-
-    // Manual QR code entry
-    // Manual QR logic moved to top
-
     // Initialize scanner section if visible
     initQRScanner();
+
+    // Test the QR endpoint directly - DEBUG FUNCTION
+    window.testQREndpoint = async function(formCode = 'LAU-2025-7AE938') {
+        console.log('Testing QR endpoint for form:', formCode);
+        
+        try {
+            const response = await fetch(`https://dhms-b8w3.onrender.com/aau-dhms-api/public/laundry/${formCode}/taken/`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            console.log('Response status:', response.status);
+            console.log('Response headers:', response.headers);
+            
+            if (response.ok) {
+                const data = await response.json();
+                console.log('✅ Success:', data);
+                return data;
+            } else {
+                const errorText = await response.text();
+                console.log('❌ Error:', errorText);
+                return { error: errorText };
+            }
+        } catch (error) {
+            console.log('❌ Network error:', error);
+            return { error: error.message };
+        }
+    };
 });

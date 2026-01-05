@@ -82,42 +82,34 @@ document.addEventListener('DOMContentLoaded', async function () {
         }
     };
 
-    // Load profile image from localStorage on page load
+          // Load profile image from localStorage on page load
     function loadProfileImage() {
         const savedImage = localStorage.getItem('student_profile_image');
         if (savedImage) {
-            console.log('Loading saved profile image from localStorage');
+            console.log('Photo exists in localStorage, loading...');
 
-            // Update ALL profile image locations
-            // Sidebar studentPhoto by ID
+            // Update sidebar student photo
             const studentPhoto = document.getElementById('studentPhoto');
-            if (studentPhoto) studentPhoto.src = savedImage;
-
-            // Sidebar user info
-            const sidebarAvatar = document.querySelector('.user-info img');
-            if (sidebarAvatar) sidebarAvatar.src = savedImage;
-
-            // User avatar in various places
-            const userAvatarImg = document.querySelector('.user-avatar img');
-            if (userAvatarImg) userAvatarImg.src = savedImage;
-
-            // Top nav right side
-            const topNavImg = document.querySelector('.nav-right img');
-            if (topNavImg) topNavImg.src = savedImage;
-
-            // Any img inside sidebar-user-info
-            const sidebarUserInfo = document.querySelector('.sidebar-user-info img');
-            if (sidebarUserInfo) sidebarUserInfo.src = savedImage;
-
-            // Photo preview if on upload page
-            const photoPreview = document.getElementById('photoPreview');
-            if (photoPreview) {
-                photoPreview.src = savedImage;
-                photoPreview.style.display = 'block';
-                const placeholder = document.querySelector('.preview-placeholder');
-                if (placeholder) placeholder.style.display = 'none';
+            if (studentPhoto) {
+                studentPhoto.src = savedImage;
+                console.log('Updated sidebar photo');
             }
+
+            // Update current photo preview in upload section
+            const currentPhotoPreview = document.getElementById('currentPhotoPreview');
+            const noPhotoMessage = document.getElementById('noPhotoMessage');
+            if (currentPhotoPreview) {
+                currentPhotoPreview.src = savedImage;
+                currentPhotoPreview.style.display = 'block';
+                if (noPhotoMessage) noPhotoMessage.style.display = 'none';
+                console.log('Updated current photo preview');
+            }
+
+            // CRITICAL: Immediately hide the upload form
+            disablePhotoUpload();
+            
         } else {
+            console.log('No photo in localStorage');
             // Set default placeholder if no saved image
             const studentPhoto = document.getElementById('studentPhoto');
             if (studentPhoto && !studentPhoto.src) {
@@ -125,6 +117,55 @@ document.addEventListener('DOMContentLoaded', async function () {
             }
         }
     }
+    
+    // Function to hide upload form and show only instructions after upload
+    function disablePhotoUpload() {
+        console.log('Running disablePhotoUpload()');
+        
+        // Get all elements
+        const uploadForm = document.querySelector('.upload-form');
+        const photoContainer = document.querySelector('.photo-upload-container');
+        const photoInstructions = document.querySelector('.photo-instructions');
+        
+        console.log('Elements found:', {
+            uploadForm: !!uploadForm,
+            photoContainer: !!photoContainer,
+            photoInstructions: !!photoInstructions
+        });
+
+        // Hide the entire upload form container
+        if (photoContainer) {
+            photoContainer.style.display = 'none';
+            console.log('Hid photo-upload-container');
+        } else if (uploadForm) {
+            // Fallback if container not found
+            uploadForm.style.display = 'none';
+            console.log('Hid upload-form directly');
+        }
+
+        // Update photo instructions to show completion message
+        if (photoInstructions) {
+            console.log('Updating photo instructions');
+            photoInstructions.innerHTML = `
+                <div class="photo-uploaded-success">
+                    <h3>✅ Profile Photo Successfully Uploaded</h3>
+                    
+                    <div class="important-info">
+                        <h3><i class="fas fa-exclamation-circle"></i> Important Information</h3>
+                        <ul>
+                            <li><i class="fas fa-lock"></i> Your photo cannot be changed after upload</li>
+                            <li><i class="fas fa-id-card"></i> This photo is used for campus identification</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="contact-info">
+                        <h4><i class="fas fa-info-circle"></i> If you need to update your photo due to an error, please contact your dormitory proctor.</h4>
+                    </div>
+                </div>
+            `;
+        }
+    }
+    
 
     // Load dashboard data
     async function loadDashboardData() {
@@ -341,7 +382,7 @@ document.addEventListener('DOMContentLoaded', async function () {
     }
 
     // Create active QR card HTML - compact with preview button
-    function createActiveQRCard(form) {
+     function createActiveQRCard(form) {
         const formCode = form.form_code || `LAU-${form.id}`;
         const qrLink = form.qr_link || `${window.API_BASE_URL}/public/laundry/${formCode}/taken/`;
         const status = form.status || 'approved';
@@ -352,11 +393,13 @@ document.addEventListener('DOMContentLoaded', async function () {
             <div class="qr-card-compact">
                 <div class="qr-card-info">
                     <span class="form-code">${formCode}</span>
-                    <span class="badge badge-${badgeClass}">${statusLabel}</span>
-                    <span class="item-count">${form.item_count || 0} items</span>
+                    <div class="card-meta">
+                        <span class="badge badge-${badgeClass}">${statusLabel}</span>
+                        <span class="item-count">${form.item_count || 0} items</span>
+                    </div>
                 </div>
-                <button class="btn btn-sm btn-primary preview-btn" onclick="showQRModal('${formCode}', '${qrLink}', ${form.item_count || 0})">
-                    <i class="fas fa-eye"></i> Preview QR
+                <button class="btn btn-primary preview-btn" onclick="showQRModal('${formCode}', '${qrLink}', ${form.item_count || 0})">
+                    <i class="fas fa-qrcode"></i> Show QR
                 </button>
             </div>
         `;
@@ -507,7 +550,7 @@ document.addEventListener('DOMContentLoaded', async function () {
 
         // Show QR preview button for any form that's not rejected or pending_proctor
         let qrButton = '';
-        const isApprovedOrBeyond = !status.includes('reject') && status !== 'pending_proctor' && status !== 'pending';
+        const isApprovedOrBeyond = (status.includes('approved'));
 
         if (isApprovedOrBeyond) {
             const link = qrLink || `${window.API_BASE_URL}/public/laundry/${formCode}/taken/`;
@@ -567,13 +610,18 @@ document.addEventListener('DOMContentLoaded', async function () {
 
         // Generate QR code with the link
         if (typeof QRCode !== 'undefined') {
+            // Calculate optimal size based on screen width
+            const screenWidth = window.innerWidth;
+            const qrSize = screenWidth < 480 ? 220 : 240;
+            
             new QRCode(qrContainer, {
                 text: qrLink,
-                width: 200,
-                height: 200,
-                colorDark: "#2c5282",
-                colorLight: "#ffffff",
-                correctLevel: QRCode.CorrectLevel.H
+                width: qrSize,
+                height: qrSize,
+                colorDark: "#1a365d",    // Dark blue
+                colorLight: "#ffffff",   // White background
+                correctLevel: QRCode.CorrectLevel.H,
+                margin: 2
             });
 
             // Update modal info
@@ -587,11 +635,12 @@ document.addEventListener('DOMContentLoaded', async function () {
             if (itemCountEl) itemCountEl.textContent = `${itemCount} items`;
             if (timestampEl) timestampEl.textContent = formatDateTime(new Date().toISOString());
 
-            // Store QR link for printing/saving
-            qrContainer.dataset.qrLink = qrLink;
-
             // Show modal
             modal.style.display = 'block';
+            
+            // Scroll to top of modal to ensure everything is visible
+            modal.scrollTop = 0;
+            
         } else {
             showAlert('QR Code library not loaded', 'error');
         }
@@ -741,6 +790,10 @@ document.addEventListener('DOMContentLoaded', async function () {
     const photoUploadForm = document.getElementById('photoUploadForm');
     const photoInput = document.getElementById('photoInput');
 
+    // Load profile image on page load
+    loadProfileImage();
+
+    // Handle photo selection preview
     if (photoInput) {
         photoInput.addEventListener('change', function (e) {
             const file = e.target.files[0];
@@ -748,6 +801,7 @@ document.addEventListener('DOMContentLoaded', async function () {
                 // Validate file size (max 2MB)
                 if (file.size > 2 * 1024 * 1024) {
                     showAlert('Image too large. Please select an image under 2MB.', 'error');
+                    this.value = ''; // Clear the input
                     return;
                 }
 
@@ -768,17 +822,33 @@ document.addEventListener('DOMContentLoaded', async function () {
         });
     }
 
+    // Handle photo form submission
     if (photoUploadForm) {
-        photoUploadForm.addEventListener('submit', async function (e) {
+        photoUploadForm.addEventListener('submit', function (e) {
             e.preventDefault();
 
             const preview = document.getElementById('photoPreview');
-            if (preview && preview.src && !preview.src.includes('placeholder')) {
+            if (preview && preview.src && preview.src !== '') {
                 // Save to localStorage
                 localStorage.setItem('student_profile_image', preview.src);
 
-                // Update ALL avatar displays on the page
-                updateAllProfileImages(preview.src);
+                // Update sidebar photo
+                const studentPhoto = document.getElementById('studentPhoto');
+                if (studentPhoto) studentPhoto.src = preview.src;
+                
+                // Update current photo preview
+                const currentPhotoPreview = document.getElementById('currentPhotoPreview');
+                if (currentPhotoPreview) {
+                    currentPhotoPreview.src = preview.src;
+                    currentPhotoPreview.style.display = 'block';
+                }
+                
+                // Hide "no photo" message
+                const noPhotoMessage = document.getElementById('noPhotoMessage');
+                if (noPhotoMessage) noPhotoMessage.style.display = 'none';
+
+                // Hide upload form
+                disablePhotoUpload();
 
                 showAlert('Profile photo saved successfully!', 'success');
             } else {
@@ -787,30 +857,21 @@ document.addEventListener('DOMContentLoaded', async function () {
         });
     }
 
-    // Function to update all profile images on the page
-    function updateAllProfileImages(imageSrc) {
-        // Sidebar studentPhoto by ID (main profile image)
-        const studentPhoto = document.getElementById('studentPhoto');
-        if (studentPhoto) studentPhoto.src = imageSrc;
+    // Cancel photo upload
+    window.cancelPhotoUpload = function () {
+        const photoInput = document.getElementById('photoInput');
+        const preview = document.getElementById('photoPreview');
+        const placeholder = document.querySelector('.preview-placeholder');
 
-        // Sidebar user info
-        const sidebarAvatar = document.querySelector('.sidebar-user-info img');
-        if (sidebarAvatar) sidebarAvatar.src = imageSrc;
-
-        // User info section (sidebar)
-        const userInfoImg = document.querySelector('.user-info img');
-        if (userInfoImg) userInfoImg.src = imageSrc;
-
-        // Top nav avatar
-        const topNavAvatar = document.querySelector('.nav-right img, .user-avatar img');
-        if (topNavAvatar) topNavAvatar.src = imageSrc;
-
-        // Any other profile images with class
-        const allProfileImgs = document.querySelectorAll('.profile-image, .avatar-img, [data-profile-image]');
-        allProfileImgs.forEach(img => {
-            img.src = imageSrc;
-        });
-    }
+        if (photoInput) photoInput.value = '';
+        if (preview) {
+            preview.src = '';
+            preview.style.display = 'none';
+        }
+        if (placeholder) {
+            placeholder.style.display = 'flex';
+        }
+    };
 
     // Cancel photo upload
     window.cancelPhotoUpload = function () {

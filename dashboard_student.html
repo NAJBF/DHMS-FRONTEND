@@ -76,7 +76,6 @@
                     <div class="card-body">
                         <h2 id="welcomeHeading">Welcome, Student!</h2>
                         <p>Select an option from the sidebar to get started.</p>
-
                         <div class="quick-stats">
                             <div class="stat-card">
                                 <i class="fas fa-bed"></i>
@@ -158,7 +157,6 @@
                                 <textarea class="form-control" id="issueDescription"
                                     placeholder="Describe the issue in detail..." required></textarea>
                             </div>
-
                             <div class="form-group">
                                 <label>Urgency</label>
                                 <select class="form-control" id="urgency">
@@ -234,7 +232,6 @@
                     </div>
                 </div>
             </div>
-
             <!-- Penalties -->
             <div id="penaltiesSection" class="section" style="display: none;">
                 <div class="card">
@@ -265,75 +262,74 @@
                 </div>
             </div>
             <!-- Photo Upload Section -->
-            <div id="photoSection" class="section" style="display: none;">
-                <div class="card">
-                    <div class="card-header">
-                        <h3>Upload Profile Photo</h3>
-                    </div>
-                    <div class="card-body">
-                        <div class="photo-upload-container">
-                            <div class="current-photo">
-                                <h4>Current Photo</h4>
-                                <div class="photo-preview">
-                                    <img id="currentPhotoPreview" src="" alt="Current Photo">
-                                    <div class="photo-placeholder" id="noPhotoMessage">
-                                        <i class="fas fa-user-circle"></i>
-                                        <p>No photo uploaded yet</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="upload-form">
-                                <h4>Upload New Photo</h4>
-                                <form id="photoUploadForm">
-                                    <div class="form-group">
-                                        <label for="photoInput">Select Photo</label>
-                                        <input type="file" class="form-control" id="photoInput" accept="image/*"
-                                            required>
-                                        <small class="form-text text-muted">
-                                            Supported formats: JPG, PNG, GIF. Max size: 2MB.
-                                        </small>
-                                    </div>
-
-                                    <div class="form-group">
-                                        <label>Photo Preview</label>
-                                        <div class="photo-preview-upload">
-                                            <img id="photoPreview" src="" alt="Preview" style="display: none;">
-                                            <div class="preview-placeholder">
-                                                <i class="fas fa-image"></i>
-                                                <p>Preview will appear here</p>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div class="upload-buttons">
-                                        <button type="button" class="btn btn-secondary" onclick="cancelPhotoUpload()">
-                                            <i class="fas fa-times"></i> Cancel
-                                        </button>
-                                        <button type="submit" class="btn btn-primary">
-                                            <i class="fas fa-upload"></i> Upload Photo
-                                        </button>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
-
-                        <div class="photo-instructions mt-4">
-                            <h5><i class="fas fa-info-circle"></i> Instructions</h5>
-                            <ul>
-                                <li>Upload a clear, recent photo of yourself</li>
-                                <li>Photo should show your full face clearly</li>
-                                <li>Only upload a photo once - it cannot be changed later</li>
-                                <li>This photo will be used for identification purposes</li>
-                            </ul>
+            <!-- Photo Upload Section -->
+<div id="photoSection" class="section" style="display: none;">
+    <div class="card">
+        <div class="card-header">
+            <h3>Upload Profile Photo</h3>
+        </div>
+        <div class="card-body">
+            <div class="photo-upload-container">
+                <div class="current-photo">
+                    <h4>Current Photo</h4>
+                    <div class="photo-preview">
+                        <img id="currentPhotoPreview" src="" alt="Current Photo">
+                        <div class="photo-placeholder" id="noPhotoMessage">
+                            <i class="fas fa-user-circle"></i>
+                            <p>No photo uploaded yet</p>
                         </div>
                     </div>
                 </div>
+
+                <div class="upload-form">
+                    <h4>Upload New Photo</h4>
+                    <form id="photoUploadForm">
+                        <div class="form-group">
+                            <label for="photoInput">Select Photo</label>
+                            <input type="file" class="form-control" id="photoInput" accept="image/*" required>
+                            <small class="form-text text-muted">
+                                Supported formats: JPG, PNG, GIF. Max size: 2MB.
+                            </small>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Photo Preview</label>
+                            <div class="photo-preview-upload">
+                                <img id="photoPreview" src="" alt="Preview" style="display: none;">
+                                <div class="preview-placeholder">
+                                    <i class="fas fa-image"></i>
+                                    <p>Preview will appear here</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="upload-buttons">
+                            <button type="button" class="btn btn-secondary" onclick="cancelPhotoUpload()">
+                                <i class="fas fa-times"></i> Cancel
+                            </button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-upload"></i> Upload Photo
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </div>
+            <div class="photo-instructions mt-4">
+                <h5><i class="fas fa-info-circle"></i> Instructions</h5>
+                <ul>
+                    <li>Upload a clear, recent photo of yourself</li>
+                    <li>Photo should show your full face clearly</li>
+                    <li>Only upload a photo once - it cannot be changed later</li>
+                    <li>This photo will be used for identification purposes</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
         </main>
 
         <footer class="footer">
-            <p>&copy; 2024 AAU - Student Portal</p>
+            <p>&copy; 2025 AAU - Student Portal</p>
         </footer>
     </div>
 
@@ -369,12 +365,6 @@
             </div>
         </div>
     </div>
-
-    <!-- Test Button for QR Code (Remove in production) -->
-    <button onclick="testQR()"
-        style="position: fixed; bottom: 20px; right: 20px; z-index: 1000; padding: 10px 20px; background: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer;">
-        Test QR Code
-    </button>
 
     <script>
         // Force QRCode to load first

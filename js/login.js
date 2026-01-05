@@ -319,7 +319,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const hint = document.getElementById('formatHint');
 
         if (value.startsWith('ugr/') || value.startsWith('UGR/')) {
-            const ugrPattern = /^ugr\/\d{4}\/(15|16|17|18)$/i;
+            const ugrPattern = /^ugr\/\d{3,5}\/(12|13|14|15|16|17|18)$/i;
             const isValid = ugrPattern.test(value);
 
             this.classList.remove('input-valid', 'input-invalid');
@@ -328,7 +328,7 @@ document.addEventListener('DOMContentLoaded', function () {
             }
 
             if (!isValid && value.length > 4) {
-                hint.textContent = 'Format: ugr/xxxx/15-18';
+                hint.textContent = 'Format: ugr/xxx/12-18 (3-5 digits)';
                 hint.style.color = '#E53E3E';
             } else if (isValid) {
                 hint.textContent = '✓ Valid student ID';

@@ -138,7 +138,6 @@ document.addEventListener('DOMContentLoaded', async function () {
     }
 
     // Load dorms for dropdown
-    // Load dorms for dropdown
     async function loadDorms() {
         try {
             const data = await apiRequest('/dorms/');
@@ -182,7 +181,6 @@ document.addEventListener('DOMContentLoaded', async function () {
             console.log('Available rooms load failed:', error);
         }
     }
-
 
     // Load all available rooms for the list view
     window.loadAllAvailableRooms = async function () {
@@ -245,7 +243,6 @@ document.addEventListener('DOMContentLoaded', async function () {
         }
     };
 
-    // Update room dropdown based on selected dorm
     // Update room dropdown based on selected dorm
     async function updateRoomDropdown(dormId = null) {
         const roomSelect = document.getElementById('assignRoomNumber');
@@ -335,25 +332,23 @@ document.addEventListener('DOMContentLoaded', async function () {
                         const roomNumber = student.room_number || 'Not assigned';
                         const status = student.status || 'active';
 
-                        // Penalty info
+                        // Get active penalty count
                         const penaltyCount = student.active_penalties_count || student.penalties_count || 0;
-                        const penaltyBadge = penaltyCount > 0
-                            ? `<span class="badge badge-danger">${penaltyCount} Active Penalties</span>`
-                            : '<span class="badge badge-success">No Penalties</span>';
+                        
+                        // Create penalty display
+                        let penaltyDisplay = '';
+                        if (penaltyCount > 0) {
+                            penaltyDisplay = `<span class="badge badge-danger">${penaltyCount} Penalty${penaltyCount > 1 ? 's' : ''}</span>`;
+                        } else {
+                            penaltyDisplay = '<span class="text-muted">0</span>';
+                        }
 
                         row.innerHTML = `
                             <td>${studentCode}</td>
-                            <td>
-                                ${name}<br>
-                                <small>${penaltyBadge}</small>
-                            </td>
+                            <td>${name}</td>
                             <td>${roomNumber}</td>
                             <td><span class="badge badge-${status === 'active' ? 'success' : 'secondary'}">${status}</span></td>
-                            <td>
-                                <button class="btn btn-sm btn-info" onclick="viewStudent(${student.id})">
-                                    <i class="fas fa-eye"></i> View
-                                </button>
-                            </td>
+                            <td>${penaltyDisplay}</td>
                         `;
                         tableBody.appendChild(row);
                     });
@@ -460,25 +455,27 @@ document.addEventListener('DOMContentLoaded', async function () {
                     const urgency = request.urgency || 'low';
                     const reportedDate = request.reported_date || request.created_at;
 
-                    html += `
-                        <tr>
-                            <td>${requestCode}</td>
-                            <td>${studentName}</td>
-                            <td>${roomNumber}</td>
-                            <td>${formatIssueType(issueType)}</td>
-                            <td><span class="badge ${urgency === 'high' ? 'badge-danger' : urgency === 'medium' ? 'badge-warning' : 'badge-success'}">${urgency}</span></td>
-                            <td>${formatDate(reportedDate)}</td>
-                            <td>
-                                <button class="btn btn-sm btn-success" onclick="approveMaintenance(${requestId})">
-                                    <i class="fas fa-check"></i> Approve
-                                </button>
-                                <button class="btn btn-sm btn-danger" onclick="rejectMaintenance(${requestId})">
-                                    <i class="fas fa-times"></i> Reject
-                                </button>
-                            </td>
-                        </tr>
-                    `;
-                });
+                   html += `
+    <tr>
+        <td>${requestCode}</td>
+        <td>${studentName}</td>
+        <td>${roomNumber}</td>
+        <td>${formatIssueType(issueType)}</td>
+        <td><span class="badge ${urgency === 'high' ? 'badge-danger' : urgency === 'medium' ? 'badge-warning' : 'badge-success'}">${urgency}</span></td>
+        <td>${formatDate(reportedDate)}</td>
+        <td class="action-cell">
+            <div class="action-buttons">
+                <button class="btn btn-sm btn-success" onclick="approveMaintenance(${requestId})">
+                    <i class="fas fa-check"></i> Approve
+                </button>
+                <button class="btn btn-sm btn-danger" onclick="rejectMaintenance(${requestId})">
+                    <i class="fas fa-times"></i> Reject
+                </button>
+            </div>
+        </td>
+    </tr>
+`;
+                }); // <-- This closing brace was missing!
 
                 html += '</tbody></table>';
                 container.innerHTML = html;
@@ -553,13 +550,15 @@ document.addEventListener('DOMContentLoaded', async function () {
                             <td>${itemList.substring(0, 50)}${itemList.length > 50 ? '...' : ''}</td>
                             <td>${itemCount}</td>
                             <td>${formatDate(submissionDate)}</td>
-                            <td>
-                                <button class="btn btn-sm btn-success" onclick="approveLaundry(${formId})">
-                                    <i class="fas fa-check"></i> Approve
-                                </button>
-                                <button class="btn btn-sm btn-danger" onclick="rejectLaundry(${formId})">
-                                    <i class="fas fa-times"></i> Reject
-                                </button>
+                            <td class="action-cell">
+                                <div class="action-buttons">
+                                    <button class="btn btn-sm btn-success" onclick="approveLaundry(${formId})">
+                                        <i class="fas fa-check"></i> Accept
+                                    </button>
+                                    <button class="btn btn-sm btn-danger" onclick="rejectLaundry(${formId})">
+                                        <i class="fas fa-times"></i> Reject
+                                    </button>
+                                </div>
                             </td>
                         </tr>
                     `;

@@ -76,55 +76,6 @@ body {
     color: #2d3748;
     font-size: 1.5rem;
 }
-
-/* Role Selector */
-.role-selector {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 10px;
-    margin-bottom: 25px;
-}
-
-.role-btn {
-    padding: 15px 10px;
-    border: 2px solid #e2e8f0;
-    background: white;
-    border-radius: 8px;
-    cursor: pointer;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 8px;
-    transition: all 0.3s ease;
-}
-
-.role-btn i {
-    font-size: 1.5rem;
-    color: #4a5568;
-}
-
-.role-btn span {
-    font-size: 0.8rem;
-    font-weight: 600;
-    color: #4a5568;
-}
-
-.role-btn:hover {
-    border-color: #4299e1;
-    transform: translateY(-2px);
-}
-
-.role-btn.active {
-    border-color: #2c5282;
-    background: #2c5282;
-    color: white;
-}
-
-.role-btn.active i,
-.role-btn.active span {
-    color: white;
-}
-
 /* Login Form */
 .form-group {
     margin-bottom: 20px;
@@ -174,34 +125,6 @@ body {
 
 .login-btn:hover {
     background: #1a365d;
-}
-
-.demo-credentials {
-    margin-top: 25px;
-    padding: 20px;
-    background: #f8f9fa;
-    border-radius: 8px;
-    border-left: 4px solid #2c5282;
-}
-
-.demo-credentials h4 {
-    margin-bottom: 15px;
-    color: #2d3748;
-    font-size: 1rem;
-}
-
-.demo-credentials p {
-    margin-bottom: 8px;
-    font-size: 0.9rem;
-    color: #4a5568;
-}
-
-.demo-credentials small {
-    display: block;
-    margin-top: 10px;
-    font-size: 0.8rem;
-    color: #718096;
-    line-height: 1.4;
 }
 
 .login-footer {
@@ -798,7 +721,7 @@ textarea.form-control {
 }
 
 .dashboard-card .card-header {
-    background: linear-gradient(135deg, #2c5282 0%, #1a365d 100%);
+    background-color: white;
     color: white;
     padding: 20px;
 }
@@ -808,6 +731,7 @@ textarea.form-control {
     align-items: center;
     gap: 10px;
     font-size: 1.3rem;
+    color: #2c5282;
 }
 
 .dashboard-card .card-body {
@@ -1013,8 +937,6 @@ textarea.form-control {
     }
 }
 
-/* Add these new styles to your existing CSS */
-
 /* Campus Status Badges */
 .campus-status {
     margin-top: 8px;
@@ -1051,65 +973,194 @@ textarea.form-control {
     height: 100%;
     background-color: rgba(0, 0, 0, 0.5);
     animation: fadeIn 0.3s ease;
+    overflow-y: auto; /* Enable scrolling if needed */
+    padding: 20px;
+    box-sizing: border-box;
 }
 
 .modal-content {
     background-color: white;
-    margin: 5% auto;
+    margin: 40px auto; /* Reduced from 5% to fixed margin */
     padding: 0;
     border-radius: 10px;
     width: 90%;
-    max-width: 500px;
+    max-width: 450px; /* Smaller max width */
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
     animation: slideIn 0.3s ease;
+    max-height: 90vh; /* Limit height */
+    overflow-y: auto; /* Enable scrolling inside modal */
 }
 
-@keyframes slideIn {
-    from {
-        transform: translateY(-50px);
-        opacity: 0;
-    }
-
-    to {
-        transform: translateY(0);
-        opacity: 1;
-    }
-}
-
+/* Modal header */
 .modal-header {
-    padding: 20px;
+    padding: 15px 20px;
     border-bottom: 1px solid #e2e8f0;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    background: white;
+    color: white;
+    border-radius: 10px 10px 0 0;
 }
 
 .modal-header h3 {
     margin: 0;
-    color: #2d3748;
+    color: white;
+    font-size: 1.2rem;
 }
 
 .close-modal {
     font-size: 1.5rem;
     cursor: pointer;
-    color: #718096;
+    color: white;
     transition: color 0.3s;
+    opacity: 0.8;
 }
 
 .close-modal:hover {
-    color: #2d3748;
+    opacity: 1;
+    transform: scale(1.1);
 }
 
+/* Modal body - ensure everything fits */
 .modal-body {
     padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
+/* QR Code Container - properly sized */
+.qr-code-container {
+    text-align: center;
+    width: 100%;
+}
+
+#qrcode {
+    display: inline-block;
+    padding: 15px;
+    background: white;
+    border-radius: 8px;
+    border: 2px solid #2c5282;
+    margin: 0 auto 20px auto;
+    max-width: 280px; /* Limit QR code size */
+}
+
+/* Ensure QR code canvas is properly sized */
+#qrcode canvas {
+    width: 240px !important;
+    height: 240px !important;
+    max-width: 100%;
+    border-radius: 6px;
+}
+
+.qr-info {
+    margin-top: 10px;
+    color: #4a5568;
+    font-size: 0.9rem;
+    padding: 10px;
+    background: #f8f9fa;
+    border-radius: 6px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.qr-details {
+    margin-top: 15px;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    text-align: left;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.qr-details p {
+    margin: 8px 0;
+    font-size: 0.9rem;
+    padding-bottom: 5px;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.qr-details p:last-child {
+    border-bottom: none;
+}
+
+.qr-details strong {
+    color: #2c5282;
+    min-width: 100px;
+    display: inline-block;
+}
+
+/* Modal footer - keep buttons visible */
 .modal-footer {
-    padding: 20px;
+    padding: 15px 20px;
     border-top: 1px solid #e2e8f0;
     display: flex;
     gap: 10px;
-    justify-content: flex-end;
+    justify-content: center; /* Center buttons */
+    flex-wrap: wrap; /* Wrap buttons on small screens */
+    background: #f8f9fa;
+    border-radius: 0 0 10px 10px;
+}
+
+.modal-footer .btn {
+    padding: 10px 20px;
+    font-size: 0.9rem;
+    flex: 1;
+    min-width: 120px;
+    text-align: center;
+}
+
+/* For very small screens */
+@media (max-width: 480px) {
+    .modal-content {
+        margin: 20px auto;
+        width: 95%;
+    }
+    
+    #qrcode {
+        padding: 10px;
+        max-width: 250px;
+    }
+    
+    #qrcode canvas {
+        width: 220px !important;
+        height: 220px !important;
+    }
+    
+    .modal-footer {
+        flex-direction: column;
+    }
+    
+    .modal-footer .btn {
+        width: 100%;
+    }
+}
+
+/* Print-specific improvements */
+@media print {
+    .modal-content {
+        box-shadow: none;
+        border: 2px solid #000;
+        margin: 0;
+        width: 100%;
+        max-width: none;
+    }
+    
+    #qrcode {
+        border: 3px solid #000 !important;
+        box-shadow: none !important;
+        padding: 30px;
+    }
+    
+    #qrcode canvas {
+        border: 2px solid #000 !important;
+    }
+    
+    .modal-footer {
+        display: none;
+    }
 }
 
 /* QR Code Container */
@@ -1723,4 +1774,181 @@ textarea.form-control {
 
 .qr-preview-actions .btn i {
     font-size: 1rem;
+}
+/* CSS Grid for laundry cards - NO JavaScript changes needed */
+#laundryVerificationList {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 15px;
+    margin-top: 20px;
+}
+
+/* Style the existing verification cards to look better in grid */
+.verification-card {
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 15px;
+    background: white;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    margin: 0; /* Remove any default margins */
+}
+
+/* Make sure the cards don't overflow */
+.verification-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.verification-body {
+    margin-bottom: 15px;
+}
+
+.verification-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.verification-actions .btn {
+    flex: 1;
+    padding: 8px 12px;
+}
+/* Simplified Security Dashboard */
+.welcome-message {
+    text-align: center;
+    padding: 20px;
+}
+
+.welcome-message h4 {
+    color: #2c5282;
+    margin-bottom: 15px;
+    font-size: 1.4em;
+}
+
+.welcome-message p {
+    color: #666;
+    margin-bottom: 25px;
+    font-size: 1.1em;
+}
+
+.feature-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 25px;
+    margin-top: 30px;
+}
+
+.feature-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 20px;
+    padding: 25px;
+    background: #f8f9fa;
+    border-radius: 10px;
+    border-left: 5px solid #28a745;
+    transition: all 0.3s ease;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+}
+
+.feature-item:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 6px 15px rgba(0,0,0,0.12);
+    background: white;
+}
+
+.feature-item i {
+    font-size: 32px;
+    color: #28a745;
+    margin-top: 5px;
+}
+
+.feature-item h5 {
+    margin: 0 0 8px 0;
+    color: #2d3748;
+    font-size: 1.2em;
+}
+
+.feature-item p {
+    margin: 0;
+    color: #718096;
+    font-size: 0.95em;
+    line-height: 1.5;
+}
+
+/* Simplified Security Dashboard */
+.welcome-message {
+    text-align: center;
+    padding: 20px;
+}
+
+.welcome-message h4 {
+    color: #2c5282;
+    margin-bottom: 15px;
+    font-size: 1.4em;
+}
+
+.welcome-message p {
+    color: #666;
+    margin-bottom: 25px;
+    font-size: 1.1em;
+}
+
+.feature-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 25px;
+    margin-top: 30px;
+}
+
+.feature-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 20px;
+    padding: 25px;
+    background: #f8f9fa;
+    border-radius: 10px;
+    border-left: 5px solid #2c5282;
+    transition: all 0.3s ease;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+}
+
+.feature-item:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 6px 15px rgba(0,0,0,0.12);
+    background: white;
+}
+
+.feature-item i {
+    font-size: 32px;
+    color: #2c5282;
+    margin-top: 5px;
+}
+
+.feature-item h5 {
+    margin: 0 0 8px 0;
+    color: #2d3748;
+    font-size: 1.2em;
+}
+
+.feature-item p {
+    margin: 0;
+    color: #718096;
+    font-size: 0.95em;
+    line-height: 1.5;
+}
+/* Fix for maintenance approval buttons */
+#maintenanceApprovalContainer table td:last-child {
+    white-space: nowrap !important;
+}
+
+#maintenanceApprovalContainer .action-buttons {
+    display: inline-flex !important;
+    gap: 8px;
+}
+
+#maintenanceApprovalContainer .action-buttons .btn {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
 }
